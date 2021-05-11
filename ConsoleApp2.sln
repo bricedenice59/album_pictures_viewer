@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.31205.134
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFSqliteDOTNET50", "EFSqliteDOTNET50.csproj", "{1375E2F8-D997-479A-A5A4-3B7B86A82C95}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFSQLite.Test", "..\EFSQLite.Test\EFSQLite.Test.csproj", "{EAA7C053-21CA-4EE9-BC05-58FBFEE6AAA2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFSQLite.Test", "EFSQLite.Test\EFSQLite.Test.csproj", "{BE34D292-8633-4B9D-B791-03E15ACD117D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{1375E2F8-D997-479A-A5A4-3B7B86A82C95}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1375E2F8-D997-479A-A5A4-3B7B86A82C95}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1375E2F8-D997-479A-A5A4-3B7B86A82C95}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EAA7C053-21CA-4EE9-BC05-58FBFEE6AAA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EAA7C053-21CA-4EE9-BC05-58FBFEE6AAA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EAA7C053-21CA-4EE9-BC05-58FBFEE6AAA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EAA7C053-21CA-4EE9-BC05-58FBFEE6AAA2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE34D292-8633-4B9D-B791-03E15ACD117D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE34D292-8633-4B9D-B791-03E15ACD117D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE34D292-8633-4B9D-B791-03E15ACD117D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE34D292-8633-4B9D-B791-03E15ACD117D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
