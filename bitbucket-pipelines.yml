@@ -13,4 +13,4 @@ pipelines:
           - export CONFIGURATION=Release
           - dotnet restore $SOLUTION_NAME.sln
           - dotnet build --no-restore $SOLUTION_NAME.sln --configuration $CONFIGURATION
-          - dotnet test --no-build ~/EFSQLite.Test/EFSQLite.Test.csproj
+          - dotnet test --no-build $SOLUTION_NAME.sln
