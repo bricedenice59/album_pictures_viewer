@@ -11,6 +11,6 @@ pipelines:
         script: 
           - export SOLUTION_NAME=ConsoleApp2          
           - export CONFIGURATION=Release
-          - dotnet restore SOLUTION_NAME.sln
+          - dotnet restore $SOLUTION_NAME.sln
           - dotnet build --no-restore $SOLUTION_NAME.sln --configuration $CONFIGURATION
           - dotnet test --no-build $SOLUTION_NAME.sln
