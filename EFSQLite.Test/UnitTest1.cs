@@ -12,6 +12,7 @@ using NUnit.Framework;
 
 namespace EFSQLite.Test
 {
+    [TestFixture]
     public class Tests
     {
         private IHost _host;
@@ -48,7 +49,7 @@ namespace EFSQLite.Test
             Assert.AreEqual(test3, true);
         }
 
-        [Test, Order(2)]
+        [Test, Order(1)]
         public void TestDatabaseConnection()
         {
             SimpleDbContextFactory contextFactory = _host.Services.GetRequiredService<SimpleDbContextFactory>();
@@ -56,7 +57,7 @@ namespace EFSQLite.Test
             Assert.AreEqual(context.Database.CanConnect(), true);
         }
 
-        [Test, Order(3)]
+        [Test, Order(2)]
         public async Task TestAddUser()
         {
             SimpleDbContextFactory contextFactory = _host.Services.GetRequiredService<SimpleDbContextFactory>();
@@ -70,21 +71,20 @@ namespace EFSQLite.Test
             }
         }
 
-        [Test, Order(4)]
+        [Test, Order(3)]
         public async Task TestUpdateUser()
         {
             SimpleDbContextFactory contextFactory = _host.Services.GetRequiredService<SimpleDbContextFactory>();
             
-            User userToUpdate = User.Clone(_userForTesting);
-            userToUpdate.Email = "brice.von.nice@gmail.com";
-
-            var nonQueryService = new NonQueryDataService<User>(contextFactory);
-            await nonQueryService.Update(userToUpdate.Id, userToUpdate);
-
             var queryService = new QueryDataService<User>(contextFactory);
             var allUsers = await queryService.GetAll();
 
-            Console.Out.WriteLine(allUsers.Count());
+            // make sure the object is retrieved from the database !! otherwise update fct will actually insert in db !
+            var recordToUpdate = allUsers.ToList().First(x => x.Email == _userForTesting.Email);
+            recordToUpdate.Email = "brice.von.nice@gmail.com";
+
+            var nonQueryService = new NonQueryDataService<User>(contextFactory);
+            await nonQueryService.Update(recordToUpdate.Id, recordToUpdate);
 
             bool isUserWithOldEmailFoundInDb = allUsers.ToList().Any(x => x.Email == _userForTesting.Email);
             Assert.AreEqual(isUserWithOldEmailFoundInDb, false);

@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFSqliteDOTNET50", "EFSqlit
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFSQLite.Test", "EFSQLite.Test\EFSQLite.Test.csproj", "{BE34D292-8633-4B9D-B791-03E15ACD117D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFSqliteDOTNET50.Utils", "..\EFSqliteDOTNET50.Utils\EFSqliteDOTNET50.Utils.csproj", "{A8D3B143-5C56-472A-840D-11195C2D390F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFSqliteDOTNET50.Utils", "EFSqliteDOTNET50.Utils\EFSqliteDOTNET50.Utils.csproj", "{852B5607-442B-41DD-AFD7-E915F2BD22DD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{BE34D292-8633-4B9D-B791-03E15ACD117D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE34D292-8633-4B9D-B791-03E15ACD117D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE34D292-8633-4B9D-B791-03E15ACD117D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A8D3B143-5C56-472A-840D-11195C2D390F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A8D3B143-5C56-472A-840D-11195C2D390F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A8D3B143-5C56-472A-840D-11195C2D390F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A8D3B143-5C56-472A-840D-11195C2D390F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{852B5607-442B-41DD-AFD7-E915F2BD22DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{852B5607-442B-41DD-AFD7-E915F2BD22DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{852B5607-442B-41DD-AFD7-E915F2BD22DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{852B5607-442B-41DD-AFD7-E915F2BD22DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

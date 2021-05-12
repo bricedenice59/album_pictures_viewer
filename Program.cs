@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Linq;
-using System.Threading.Tasks;
 using EFSqliteDOTNET50.Utils.DbContext;
 using EFSqliteDOTNET50.Utils.Extensions;
 using EFSqliteDOTNET50.Utils.Models;
 using EFSqliteDOTNET50.Utils.QueryService;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+
 
 namespace EntityFrameworkDotNet50
 {
@@ -43,8 +42,8 @@ namespace EntityFrameworkDotNet50
                 Username = "brice",
                 DatedJoined = DateTime.Now
             };
-            //TestAddUser();
-            //TestUpdateUser();
+            TestAddUser();
+            TestUpdateUser();
         }
 
         public static void TestAddUser()
