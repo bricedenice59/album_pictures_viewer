@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
 
-namespace EFSqliteDOTNET50.Utils.DbContext
+namespace MyStreamingApp.Utils.DbContext
 {
     public class SimpleDbContextFactory
     {

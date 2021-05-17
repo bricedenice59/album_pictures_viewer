@@ -1,12 +1,12 @@
 ﻿using System;
-using EFSqliteDOTNET50.Utils.DbContext;
-using EFSqliteDOTNET50.Utils.QueryService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MyStreamingApp.Utils.DbContext;
+using MyStreamingApp.Utils.QueryService;
 
-namespace EFSqliteDOTNET50.Utils.Extensions
+namespace MyStreamingApp.Utils.Extensions
 {
     public static class AddDbContextHostBuilderExtensions
     {

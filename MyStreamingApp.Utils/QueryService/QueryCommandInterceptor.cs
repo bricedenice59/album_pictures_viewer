@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Data.Common;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace EFSqliteDOTNET50.Utils.QueryService
+namespace MyStreamingApp.Utils.QueryService
 {
     public class QueryCommandInterceptor : DbCommandInterceptor
     {

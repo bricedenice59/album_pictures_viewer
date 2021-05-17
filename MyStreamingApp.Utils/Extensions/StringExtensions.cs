@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace EFSqliteDOTNET50.Utils
+namespace MyStreamingApp.Utils.Extensions
 {
     public static class StringExtensions
     {

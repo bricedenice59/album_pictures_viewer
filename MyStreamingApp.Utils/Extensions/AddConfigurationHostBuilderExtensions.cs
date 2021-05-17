@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
-namespace EFSqliteDOTNET50.Utils.Extensions
+namespace MyStreamingApp.Utils.Extensions
 {
     public static class AddConfigurationHostBuilderExtensions
     {

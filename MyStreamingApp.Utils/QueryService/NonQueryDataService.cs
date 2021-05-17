@@ -1,10 +1,10 @@
 ﻿using System.Threading.Tasks;
-using EFSqliteDOTNET50.Utils.DbContext;
-using EFSqliteDOTNET50.Utils.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using MyStreamingApp.Utils.DbContext;
+using MyStreamingApp.Utils.Models;
 
-namespace EFSqliteDOTNET50.Utils.QueryService
+namespace MyStreamingApp.Utils.QueryService
 {
     public class NonQueryDataService<T> where T : DomainObject
     {

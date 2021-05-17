@@ -1,13 +1,12 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EFSqliteDOTNET50.Utils;
-using EFSqliteDOTNET50.Utils.DbContext;
-using EFSqliteDOTNET50.Utils.Extensions;
-using EFSqliteDOTNET50.Utils.Models;
-using EFSqliteDOTNET50.Utils.QueryService;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MyStreamingApp.Utils.DbContext;
+using MyStreamingApp.Utils.Extensions;
+using MyStreamingApp.Utils.Models;
+using MyStreamingApp.Utils.QueryService;
 using NUnit.Framework;
 
 namespace EFSQLite.Test

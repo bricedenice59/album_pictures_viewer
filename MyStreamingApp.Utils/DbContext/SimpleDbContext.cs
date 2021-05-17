@@ -1,7 +1,7 @@
-﻿using EFSqliteDOTNET50.Utils.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using MyStreamingApp.Utils.Models;
 
-namespace EFSqliteDOTNET50.Utils.DbContext
+namespace MyStreamingApp.Utils.DbContext
 {
     public class SimpleDbContext : Microsoft.EntityFrameworkCore.DbContext
     {

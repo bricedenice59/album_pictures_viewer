@@ -1,4 +1,4 @@
-﻿namespace EFSqliteDOTNET50.Utils.Models
+﻿namespace MyStreamingApp.Utils.Models
 {
     public class DomainObject
     {

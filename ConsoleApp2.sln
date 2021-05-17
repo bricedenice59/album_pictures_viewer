@@ -7,7 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFSqliteDOTNET50", "EFSqlit
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFSQLite.Test", "EFSQLite.Test\EFSQLite.Test.csproj", "{BE34D292-8633-4B9D-B791-03E15ACD117D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFSqliteDOTNET50.Utils", "EFSqliteDOTNET50.Utils\EFSqliteDOTNET50.Utils.csproj", "{852B5607-442B-41DD-AFD7-E915F2BD22DD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyStreamingApp.APIs", "MyStreamingApp.APIs\MyStreamingApp.APIs.csproj", "{7506F2CE-08D6-4177-96E5-362D97344AC2}"
+EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{E598689C-7091-416B-89EB-9BAB102004CE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyStreamingApp.Utils", "MyStreamingApp.Utils\MyStreamingApp.Utils.csproj", "{38A981F5-9AE0-45AF-B992-D7753B11FFE9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +27,18 @@ Global
 		{BE34D292-8633-4B9D-B791-03E15ACD117D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE34D292-8633-4B9D-B791-03E15ACD117D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE34D292-8633-4B9D-B791-03E15ACD117D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{852B5607-442B-41DD-AFD7-E915F2BD22DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{852B5607-442B-41DD-AFD7-E915F2BD22DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{852B5607-442B-41DD-AFD7-E915F2BD22DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{852B5607-442B-41DD-AFD7-E915F2BD22DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7506F2CE-08D6-4177-96E5-362D97344AC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7506F2CE-08D6-4177-96E5-362D97344AC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7506F2CE-08D6-4177-96E5-362D97344AC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7506F2CE-08D6-4177-96E5-362D97344AC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E598689C-7091-416B-89EB-9BAB102004CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E598689C-7091-416B-89EB-9BAB102004CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E598689C-7091-416B-89EB-9BAB102004CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E598689C-7091-416B-89EB-9BAB102004CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38A981F5-9AE0-45AF-B992-D7753B11FFE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38A981F5-9AE0-45AF-B992-D7753B11FFE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38A981F5-9AE0-45AF-B992-D7753B11FFE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38A981F5-9AE0-45AF-B992-D7753B11FFE9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
