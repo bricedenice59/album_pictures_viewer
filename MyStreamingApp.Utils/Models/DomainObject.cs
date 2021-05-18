@@ -1,4 +1,6 @@
-﻿namespace MyStreamingApp.Utils.Models
+﻿using System;
+
+namespace MyStreamingApp.Utils.Models
 {
     public class DomainObject
     {

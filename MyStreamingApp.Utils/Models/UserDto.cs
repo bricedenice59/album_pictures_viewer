@@ -1,17 +1,19 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyStreamingApp.Utils.Models
 {
-    public class User : DomainObject
+    [Table("Users")]
+    public class UserDto : DomainObject
     {
         public string Email { get; set; }
         public string Username { get; set; }
         public string PasswordHash { get; set; }
         public DateTime DatedJoined { get; set; }
 
-        public static User Clone(User user)
+        public static UserDto Clone(UserDto user)
         {
-            return new User()
+            return new UserDto()
             {
                 Id = user.Id,
                 Username = user.Username,

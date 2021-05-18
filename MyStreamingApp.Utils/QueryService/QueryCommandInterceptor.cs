@@ -15,7 +15,9 @@ namespace MyStreamingApp.Utils.QueryService
         {
             // TODO: Add your business logic
             // var dbName = connection.Database;
-            // var commandText = command.CommandText;
+             var commandText = command.CommandText;
+             Console.Out.WriteLine(commandText);
+
             return result;
         }
 
@@ -27,7 +29,9 @@ namespace MyStreamingApp.Utils.QueryService
         {
             // TODO: Add your business logic
             // var dbName = connection.Database;
-            // var commandText = command.CommandText;
+             var commandText = command.CommandText;
+            Console.Out.WriteLine(commandText);
+
             return new ValueTask<InterceptionResult<int>>(result);
         }
 
@@ -39,6 +43,8 @@ namespace MyStreamingApp.Utils.QueryService
             // TODO: Add your business logic
             // var dbName = connection.Database;
             // var commandText = command.CommandText;
+            var commandText = command.CommandText;
+            Console.Out.WriteLine(commandText);
             return result;
         }
 
@@ -63,6 +69,7 @@ namespace MyStreamingApp.Utils.QueryService
             // TODO: Add your business logic
             // var dbName = connection.Database;
             // var commandText = command.CommandText;
+
             return result;
         }
 
@@ -74,7 +81,8 @@ namespace MyStreamingApp.Utils.QueryService
         {
             // TODO: Add your business logic
             // var dbName = connection.Database;
-            // var commandText = command.CommandText;
+            var commandText = command.CommandText;
+            Console.Out.WriteLine(commandText);
             return new ValueTask<InterceptionResult<object>>(result);
         }
     }

@@ -8,18 +8,18 @@ namespace MyStreamingApp.Utils.QueryService
 {
     public class QueryDataService<T> where T : DomainObject
     {
-        private readonly SimpleDbContextFactory _contextFactory;
+        private readonly AppDbContextFactory _contextFac;
 
-        public QueryDataService(SimpleDbContextFactory contextFactory)
+        public QueryDataService(AppDbContextFactory contextFac)
         {
-            _contextFactory = contextFactory;
+            _contextFac = contextFac;
         }
 
-        public async Task<IEnumerable<User>> GetAll()
+        public async Task<IEnumerable<UserDto>> GetAll()
         {
-            using (SimpleDbContext context = _contextFactory.CreateDbContext())
+            using (AppDbContext context = _contextFac.CreateDbContext())
             {
-                IEnumerable<User> entities = await context.Users
+                IEnumerable<UserDto> entities = await context.Users
                     .ToListAsync();
                 return entities;
             }

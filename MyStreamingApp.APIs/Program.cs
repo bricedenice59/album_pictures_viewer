@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using MyStreamingApp.Utils.Extensions;
 
 namespace MyStreamingApp.APIs
 {
@@ -12,6 +13,8 @@ namespace MyStreamingApp.APIs
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .AddConfiguration()
+                .AddDbContext()
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();

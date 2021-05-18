@@ -13,7 +13,7 @@ namespace EntityFrameworkDotNet50
     class Program
     {
         private static IHost _host;
-        private static User _userForTesting;
+        private static UserDto _userForTesting;
 
         public static IHostBuilder CreateHostBuilder(string[] args = null)
         {
@@ -27,15 +27,15 @@ namespace EntityFrameworkDotNet50
             _host = CreateHostBuilder().Build();
             _host.Start();
 
-            SimpleDbContextFactory contextFactory =
-                _host.Services.GetRequiredService<SimpleDbContextFactory>();
+            AppDbContextFactory contextFac =
+                _host.Services.GetRequiredService<AppDbContextFactory>();
 
-            using (SimpleDbContext context = contextFactory.CreateDbContext())
+            using (AppDbContext context = contextFac.CreateDbContext())
             {
                 var lstUsers = context.Users.ToList();
             }
 
-            _userForTesting = new User()
+            _userForTesting = new UserDto()
             {
                 Email = "brice.grenard@gmail.com",
                 PasswordHash = "password",
@@ -48,11 +48,11 @@ namespace EntityFrameworkDotNet50
 
         public static void TestAddUser()
         {
-            SimpleDbContextFactory contextFactory =
-                _host.Services.GetRequiredService<SimpleDbContextFactory>();
-            using (SimpleDbContext context = contextFactory.CreateDbContext())
+            AppDbContextFactory contextFac =
+                _host.Services.GetRequiredService<AppDbContextFactory>();
+            using (AppDbContext context = contextFac.CreateDbContext())
             {
-                var nonQueryService = new NonQueryDataService<User>(contextFactory);
+                var nonQueryService = new NonQueryDataService<UserDto>(contextFac);
                 _userForTesting = nonQueryService.Create(_userForTesting).Result;
 
                 bool isUserCreated = context.Users.ToList().FirstOrDefault(x => x.Email == _userForTesting.Email) != null;
@@ -62,18 +62,18 @@ namespace EntityFrameworkDotNet50
 
         public static void TestUpdateUser()
         {
-            SimpleDbContextFactory contextFactory =
-                _host.Services.GetRequiredService<SimpleDbContextFactory>();
+            AppDbContextFactory contextFac =
+                _host.Services.GetRequiredService<AppDbContextFactory>();
 
-            using (SimpleDbContext context = contextFactory.CreateDbContext())
+            using (AppDbContext context = contextFac.CreateDbContext())
             {
-                User userToUpdate = User.Clone(_userForTesting);
+                UserDto userToUpdate = UserDto.Clone(_userForTesting);
                 userToUpdate.Email = "brice.von.nice@gmail.com";
 
-                var nonQueryService = new NonQueryDataService<User>(contextFactory);
+                var nonQueryService = new NonQueryDataService<UserDto>(contextFac);
                 nonQueryService.Update(userToUpdate.Id, userToUpdate);
 
-                var queryService = new QueryDataService<User>(contextFactory);
+                var queryService = new QueryDataService<UserDto>(contextFac);
                 var allUsers = queryService.GetAll().Result;
                 bool isUserWithOldEmailFoundInDb = allUsers.ToList().Any(x => x.Email == _userForTesting.Email);
             }

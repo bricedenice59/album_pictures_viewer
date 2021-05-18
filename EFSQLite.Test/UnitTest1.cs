@@ -15,7 +15,7 @@ namespace EFSQLite.Test
     public class Tests
     {
         private IHost _host;
-        private User _userForTesting;
+        private UserDto _userForTesting;
             
         [SetUp]
         public void Setup()
@@ -27,7 +27,7 @@ namespace EFSQLite.Test
             _host = host.Build();
             _host.Start();
 
-            _userForTesting = new User()
+            _userForTesting = new UserDto()
             {
                 Email = "brice.grenard@gmail.com",
                 PasswordHash = "password",
@@ -51,18 +51,18 @@ namespace EFSQLite.Test
         [Test, Order(1)]
         public void TestDatabaseConnection()
         {
-            SimpleDbContextFactory contextFactory = _host.Services.GetRequiredService<SimpleDbContextFactory>();
-            using SimpleDbContext context = contextFactory.CreateDbContext();
+            AppDbContextFactory contextFac = _host.Services.GetRequiredService<AppDbContextFactory>();
+            using AppDbContext context = contextFac.CreateDbContext();
             Assert.AreEqual(context.Database.CanConnect(), true);
         }
 
         [Test, Order(2)]
         public async Task TestAddUser()
         {
-            SimpleDbContextFactory contextFactory = _host.Services.GetRequiredService<SimpleDbContextFactory>();
-            using (SimpleDbContext context = contextFactory.CreateDbContext())
+            AppDbContextFactory contextFac = _host.Services.GetRequiredService<AppDbContextFactory>();
+            using (AppDbContext context = contextFac.CreateDbContext())
             {
-                var nonQueryService = new NonQueryDataService<User>(contextFactory);
+                var nonQueryService = new NonQueryDataService<UserDto>(contextFac);
                 _userForTesting = await nonQueryService.Create(_userForTesting);
 
                 bool isUserCreated = context.Users.ToList().FirstOrDefault(x => x.Email == _userForTesting.Email) != null;
@@ -73,16 +73,16 @@ namespace EFSQLite.Test
         [Test, Order(3)]
         public async Task TestUpdateUser()
         {
-            SimpleDbContextFactory contextFactory = _host.Services.GetRequiredService<SimpleDbContextFactory>();
+            AppDbContextFactory contextFac = _host.Services.GetRequiredService<AppDbContextFactory>();
             
-            var queryService = new QueryDataService<User>(contextFactory);
+            var queryService = new QueryDataService<UserDto>(contextFac);
             var allUsers = await queryService.GetAll();
 
             // make sure the object is retrieved from the database !! otherwise update fct will actually insert in db !
             var recordToUpdate = allUsers.ToList().First(x => x.Email == _userForTesting.Email);
             recordToUpdate.Email = "brice.von.nice@gmail.com";
 
-            var nonQueryService = new NonQueryDataService<User>(contextFactory);
+            var nonQueryService = new NonQueryDataService<UserDto>(contextFac);
             await nonQueryService.Update(recordToUpdate.Id, recordToUpdate);
 
             bool isUserWithOldEmailFoundInDb = allUsers.ToList().Any(x => x.Email == _userForTesting.Email);

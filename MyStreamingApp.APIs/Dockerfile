@@ -8,7 +8,7 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
 WORKDIR /src
 COPY ["MyStreamingApp.APIs/MyStreamingApp.APIs.csproj", "MyStreamingApp.APIs/"]
-COPY ["EFSqliteDOTNET50.Utils/EFSqliteDOTNET50.Utils.csproj", "EFSqliteDOTNET50.Utils/"]
+COPY ["MyStreamingApp.Utils/MyStreamingApp.Utils.csproj", "MyStreamingApp.Utils/"]
 RUN dotnet restore "MyStreamingApp.APIs/MyStreamingApp.APIs.csproj"
 COPY . .
 WORKDIR "/src/MyStreamingApp.APIs"

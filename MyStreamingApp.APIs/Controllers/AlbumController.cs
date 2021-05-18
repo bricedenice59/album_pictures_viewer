@@ -19,9 +19,9 @@ namespace MyStreamingApp.APIs.Controllers
         }
 
         [HttpGet]
-        public IEnumerable<Album> GetAll()
+        public IEnumerable<AlbumDto> All()
         {
-            return new List<Album>().ToArray();
+            return new List<AlbumDto>().ToArray();
         }
     }
 }

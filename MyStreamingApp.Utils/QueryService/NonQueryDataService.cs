@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using MyStreamingApp.Utils.DbContext;
@@ -8,16 +9,16 @@ namespace MyStreamingApp.Utils.QueryService
 {
     public class NonQueryDataService<T> where T : DomainObject
     {
-        private readonly SimpleDbContextFactory _contextFactory;
+        private readonly AppDbContextFactory _contextFac;
 
-        public NonQueryDataService(SimpleDbContextFactory contextFactory)
+        public NonQueryDataService(AppDbContextFactory contextFac)
         {
-            _contextFactory = contextFactory;
+            _contextFac = contextFac;
         }
 
         public async Task<T> Create(T entity)
         {
-            using (SimpleDbContext context = _contextFactory.CreateDbContext())
+            using (AppDbContext context = _contextFac.CreateDbContext())
             {
                 EntityEntry<T> createdResult = await context.Set<T>().AddAsync(entity);
                 await context.SaveChangesAsync();
@@ -28,7 +29,7 @@ namespace MyStreamingApp.Utils.QueryService
 
         public async Task<T> Update(int id, T entity)
         {
-            using (SimpleDbContext context = _contextFactory.CreateDbContext())
+            using (AppDbContext context = _contextFac.CreateDbContext())
             {
                 entity.Id = id;
                 context.Set<T>().Update(entity);
@@ -40,7 +41,7 @@ namespace MyStreamingApp.Utils.QueryService
 
         public async Task<bool> Delete(int id)
         {
-            using (SimpleDbContext context = _contextFactory.CreateDbContext())
+            using (AppDbContext context = _contextFac.CreateDbContext())
             {
                 T entity = await context.Set<T>().FirstOrDefaultAsync((e) => e.Id == id);
                 context.Set<T>().Remove(entity);

@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,8 +20,8 @@ namespace MyStreamingApp.Utils.Extensions
                     o => o.UseSqlite(connectionString)
                         .AddInterceptors(new QueryCommandInterceptor());
 
-                services.AddDbContext<SimpleDbContext>(configureDbContext);
-                services.AddSingleton<SimpleDbContextFactory>(new SimpleDbContextFactory(configureDbContext));
+                services.AddDbContext<AppDbContext>(configureDbContext);
+                services.AddSingleton<AppDbContextFactory>(new AppDbContextFactory(configureDbContext));
             });
 
             return host;
