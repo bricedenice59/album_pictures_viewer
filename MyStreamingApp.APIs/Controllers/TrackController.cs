@@ -23,7 +23,7 @@ namespace MyStreamingApp.APIs.Controllers
         }
 
         [HttpGet]
-        public IEnumerable<Track> All()
+        public IEnumerable<TrackDto> All()
         {
             using (AppDbContext context = _dbContextFactory.CreateDbContext())
             {

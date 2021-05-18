@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace MyStreamingApp.Utils.Models
 {
     [Table("Tracks")]
-    public class Track : DomainObject
+    public class TrackDto : DomainObject
     {
         public string Title { get; set; }
 

@@ -7,7 +7,7 @@ namespace MyStreamingApp.Utils.DbContext
     {
         public DbSet<UserDto> Users { get; set; }
 
-        public DbSet<Track> Tracks { get; set; }
+        public DbSet<TrackDto> Tracks { get; set; }
 
         public DbSet<AlbumDto> Albums { get; set; }
 
