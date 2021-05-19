@@ -3,11 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MyStreamingApp.Utils.DbContext;
-using MyStreamingApp.Utils.Extensions;
-using MyStreamingApp.Utils.Models;
-using MyStreamingApp.Utils.QueryService;
 using NUnit.Framework;
+using PhotoApp.Db.DbContext;
+using PhotoApp.Db.Extensions;
+using PhotoApp.Db.Models;
+using PhotoApp.Db.QueryService;
 
 namespace EFSQLite.Test
 {

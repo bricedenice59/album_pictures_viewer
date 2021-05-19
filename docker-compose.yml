@@ -1,8 +1,8 @@
 version: '3.4'
 
 services:
-  mystreamingapp.apis:
-    image: ${DOCKER_REGISTRY-}mystreamingappapis
+  photoapp.apis:
+    image: ${DOCKER_REGISTRY-}photoappapis
     build:
       context: .
-      dockerfile: MyStreamingApp.APIs/Dockerfile
+      dockerfile: PhotoApp.APIs/Dockerfile

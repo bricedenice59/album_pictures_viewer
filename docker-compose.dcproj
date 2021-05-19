@@ -6,7 +6,7 @@
     <ProjectGuid>e598689c-7091-416b-89eb-9bab102004ce</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
     <DockerServiceUrl>{Scheme}://localhost:{ServicePort}/weatherforecast</DockerServiceUrl>
-    <DockerServiceName>mystreamingapp.apis</DockerServiceName>
+    <DockerServiceName>photoapp.apis</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>
     <None Include="docker-compose.override.yml">
@@ -14,5 +14,6 @@
     </None>
     <None Include="docker-compose.yml" />
     <None Include=".dockerignore" />
+    <None Include="Dockerfile" />
   </ItemGroup>
 </Project>

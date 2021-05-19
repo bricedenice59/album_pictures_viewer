@@ -14,14 +14,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MyStreamingApp.Utils\MyStreamingApp.Utils.csproj" />
+    <ProjectReference Include="..\PhotoApp.Db\PhotoApp.Db.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="MusicLibrary.db">
+    <None Update="PhotosLibrary.db">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="SimpleTrader.db">
