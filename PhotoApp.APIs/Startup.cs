@@ -91,21 +91,36 @@ namespace PhotoApp.APIs
                     {
                         Console.WriteLine(x);
                         // Load image.
-                        Image image = Image.FromFile(x);
-
-                        // Compute thumbnail size.
-                        Size thumbnailSize = PhotoApp.Utils.ImageUtils.GetThumbnailSize(image);
-
-                        // Get thumbnail.
-                        Image thumbnail = image.GetThumbnailImage(thumbnailSize.Width,
-                            thumbnailSize.Height, null, IntPtr.Zero);
-
-                        using (MemoryStream outStream = new MemoryStream())
+                        using (Image image = Image.FromFile(x))
                         {
-                            thumbnail.Save(outStream,ImageFormat.Jpeg);
-                            photoDto.Thumbnail = outStream.ToArray();
-                        }
+                            // Compute thumbnail size.
+                            Size thumbnailSize = PhotoApp.Utils.ImageUtils.GetThumbnailSize(image);
 
+                            if (thumbnailSize.Equals(image.Size) || 
+                                (image.Width < thumbnailSize.Width || image.Height < thumbnailSize.Height))
+                            {
+                                //if no shrinking is occurring, return the original bytes
+                                using (var outStream = new MemoryStream())
+                                {
+                                    image.Save(outStream, ImageFormat.Jpeg);
+                                    photoDto.Thumbnail = outStream.ToArray();
+                                }
+                            }
+                            else
+                            {
+                                // Get thumbnail.
+                                using (var thumbnail = image.GetThumbnailImage(thumbnailSize.Width,
+                                    thumbnailSize.Height, null, IntPtr.Zero))
+                                {
+                                    using (var outStream = new MemoryStream())
+                                    {
+                                        thumbnail.Save(outStream, ImageFormat.Jpeg);
+                                        photoDto.Thumbnail = outStream.ToArray();
+                                    }
+                                }
+                            }
+                        }
+                        
                         thumbnailCreated = true;
                     }
                     catch (Exception e)
@@ -113,7 +128,7 @@ namespace PhotoApp.APIs
                         Console.WriteLine(e);
                     }
 
-                    if(thumbnailCreated)
+                    if (thumbnailCreated)
                         context.Photos.Add(photoDto);
                 });
 
