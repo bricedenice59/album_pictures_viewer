@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -14,6 +16,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
+using PhotoApp.Utils;
 using File = System.IO.File;
 
 namespace PhotoApp.APIs
@@ -40,7 +43,6 @@ namespace PhotoApp.APIs
             var dbName = "PhotosLibrary.db";
             var photosFolder = "/photos";
 
-            AppDbContext context = dbContextFactory.CreateDbContext();
             //check if db is in music folder, if not copy it
             var dbPath = Path.Combine(photosFolder, dbName);
             if (!File.Exists(dbPath))
@@ -57,8 +59,14 @@ namespace PhotoApp.APIs
                 }
             }
 
-                var files = Directory.GetFiles(photosFolder, "*.jpg", SearchOption.AllDirectories);
-                files.ToList().ForEach(x =>
+            ConcurrentDictionary<string, PhotoDto> dicPhotos;
+            var files = Directory.GetFiles(photosFolder, "*.jpg", SearchOption.AllDirectories).ToList();
+
+            var photoChunks = MiscUtils.BreakIntoChunks<string>(files, 10);
+            for (int i = 0; i < photoChunks.Count; i++)
+            {
+                dicPhotos = new ConcurrentDictionary<string, PhotoDto>();
+                Parallel.ForEach(photoChunks[i], (x) =>
                 {
                     TagLib.File tfile = null;
                     try
@@ -67,10 +75,13 @@ namespace PhotoApp.APIs
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine(e);
-                        throw;
+                        Console.WriteLine($"File {x} ignored as TagLib can't read it; {e.Message}");
                     }
 
+                    if (tfile == null)
+                    {
+                        return;
+                    }
 
                     var title = Path.GetFileName(x);
                     var albumPath = Path.GetDirectoryName(x);
@@ -96,7 +107,7 @@ namespace PhotoApp.APIs
                             // Compute thumbnail size.
                             Size thumbnailSize = PhotoApp.Utils.ImageUtils.GetThumbnailSize(image);
 
-                            if (thumbnailSize.Equals(image.Size) || 
+                            if (thumbnailSize.Equals(image.Size) ||
                                 (image.Width < thumbnailSize.Width || image.Height < thumbnailSize.Height))
                             {
                                 //if no shrinking is occurring, return the original bytes
@@ -120,7 +131,7 @@ namespace PhotoApp.APIs
                                 }
                             }
                         }
-                        
+
                         thumbnailCreated = true;
                     }
                     catch (Exception e)
@@ -128,19 +139,28 @@ namespace PhotoApp.APIs
                         Console.WriteLine(e);
                     }
 
-                    if (thumbnailCreated)
-                        context.Photos.Add(photoDto);
+                    if (!thumbnailCreated)
+                        return;
+
+                    dicPhotos.TryAdd(photoDto.AlbumPath + photoDto.Title, photoDto);
                 });
 
                 try
                 {
-                    context.SaveChanges();
+                    using (AppDbContext context = dbContextFactory.CreateDbContext())
+                    {
+                        foreach (var photoDto in dicPhotos)
+                        {
+                            context.Photos.Add(photoDto.Value);
+                        }
+                        context.SaveChanges();
+                    }
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
                 }
-
+            }
 
             if (env.IsDevelopment())
             {
