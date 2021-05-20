@@ -24,10 +24,12 @@ namespace PhotoApp.APIs
         private readonly ILogger<LibMonitor> _logger;
         private string dbName = "PhotosLibrary.db";
         private string photosFolder = "/photos";
+        private System.Threading.Timer _timer;
         private static int _lockFlag = 0;
 
+
         readonly TimeSpan startTimeSpan = TimeSpan.Zero;
-        readonly TimeSpan periodTimeSpan = TimeSpan.FromMinutes(10);
+        readonly TimeSpan periodTimeSpan = TimeSpan.FromHours(1);
 
         public LibMonitor(AppDbContextFactory dbContextFactory, ILogger<LibMonitor> logger)
         {
@@ -37,7 +39,7 @@ namespace PhotoApp.APIs
 
         public void MonitorFolder()
         {
-            var timer = new System.Threading.Timer(async(e) =>
+            _timer = new System.Threading.Timer(async(e) =>
             {
                 _logger.LogDebug($"Thread {Thread.CurrentThread.ManagedThreadId} tries to get access to syncDB fct");
 
@@ -57,7 +59,9 @@ namespace PhotoApp.APIs
                     _logger.LogInformation("Scan already processing...");
                 }
 
+                _timer.Change(periodTimeSpan, Timeout.InfiniteTimeSpan);
             }, null, startTimeSpan, periodTimeSpan);
+
         }
 
 
@@ -99,14 +103,16 @@ namespace PhotoApp.APIs
                 if (!lastDbUpdateTime.HasValue)
                 {
                     var added = Directory.EnumerateFiles(photosFolder, "*.jpg", SearchOption.AllDirectories).ToList();
-                    var addedPhotoChunks = MiscUtils.BreakIntoChunks<string>(added, 50);
+                    var addedPhotoChunks = MiscUtils.BreakIntoChunks<string>(added, 5);
                     for (int i = 0; i < addedPhotoChunks.Count; i++)
                     {
                         var dicPhotos = await EnumFilesAndCreateThumbnailAsync(addedPhotoChunks[i]);
-                        foreach (var photoDto in dicPhotos)
-                            await dbContext.Photos.AddAsync(photoDto.Value);
+                            await dbContext.Photos.AddRangeAsync(dicPhotos.Values);
+                            
+                        dicPhotos = null;
 
                         await dbContext.SaveChangesAsync();
+                        GC.Collect();
                     }
                 }
                 else
@@ -171,7 +177,6 @@ namespace PhotoApp.APIs
                         : new DateTime(2001, 01, 01).ToString(CultureInfo.InvariantCulture)
                 };
 
-                bool thumbnailCreated = false;
                 try
                 {
                     _logger.LogInformation($"Processing file {x}");
@@ -206,17 +211,12 @@ namespace PhotoApp.APIs
                         }
                     }
 
-                    thumbnailCreated = true;
+                    dicPhotos.TryAdd(photoDto.AlbumPath + photoDto.Title, photoDto);
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
                 }
-
-                if (!thumbnailCreated)
-                    return;
-
-                dicPhotos.TryAdd(photoDto.AlbumPath + photoDto.Title, photoDto);
             });
             return dicPhotos;
         }
