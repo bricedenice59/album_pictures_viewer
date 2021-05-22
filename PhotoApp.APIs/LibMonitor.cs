@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
+using PhotoApp.Db.QueryService;
 using PhotoApp.Utils;
 using TagLib.Riff;
 using File = System.IO.File;
@@ -24,6 +25,8 @@ namespace PhotoApp.APIs
         private readonly ILogger<LibMonitor> _logger;
         private string dbName = "PhotosLibrary.db";
         private string photosFolder = "/photos";
+        private string[] AllowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+
         private System.Threading.Timer _timer;
         private static int _lockFlag = 0;
 
@@ -97,32 +100,79 @@ namespace PhotoApp.APIs
                     ? $"Last library update was at {lastDbUpdateTime.Value.ToLocalTime()}"
                     : "Library has never been updated"));
 
+                // Set the last update time now
+                // Otherwise, files that change between now and update completion
+                // might not get flagged for update up in the next sync round
+                _logger.LogInformation($"Set last update time to {DateTime.UtcNow.ToUniversalTime()}");
+                await dbContext.SetLastUpdateTime(DateTime.UtcNow.ToUniversalTime());
+
                 _logger.LogInformation("Starting update: Scanning filesystem to find new/updated/deleted photos");
+
+                var allPhotoFiles = Directory
+                    .EnumerateFiles(photosFolder, "*", SearchOption.AllDirectories)
+                    .Where(file=>AllowedExtensions.Any(file.ToLower().EndsWith)).ToList();
 
                 //first time scan
                 if (!lastDbUpdateTime.HasValue)
                 {
-                    var added = Directory.EnumerateFiles(photosFolder, "*.jpg", SearchOption.AllDirectories).ToList();
-                    var addedPhotoChunks = MiscUtils.BreakIntoChunks<string>(added, 5);
-                    for (int i = 0; i < addedPhotoChunks.Count; i++)
-                    {
-                        var dicPhotos = await EnumFilesAndCreateThumbnailAsync(addedPhotoChunks[i]);
-                            await dbContext.Photos.AddRangeAsync(dicPhotos.Values);
-                            
-                        dicPhotos = null;
-
-                        await dbContext.SaveChangesAsync();
-                        GC.Collect();
-                    }
+                    await ProcessAndSaveEntity(allPhotoFiles, dbContext);
                 }
                 else
                 {
-                    
-                }
+                    List<string> added = new List<string>();
+                    List<string> updated = new List<string>();
+                    List<string> deleted = new List<string>();
 
-                //Sync ok ? Set the last update time = now
-                _logger.LogInformation($"Set last update time to {DateTime.UtcNow.ToUniversalTime()}");
-                await dbContext.SetLastUpdateTime(DateTime.UtcNow.ToUniversalTime());
+                    var allPhotosInDb = dbContext.Photos.
+                        ToDictionary(x=> Path.Combine(x.AlbumPath,x.Title), y=>y);
+
+                    foreach (KeyValuePair<string, PhotoDto> entry in allPhotosInDb)
+                    {
+                        if (!File.Exists(entry.Key))
+                        {
+                            deleted.Add(entry.Key);
+                        }
+                        else
+                        {
+                            if (entry.Value.Filesize != new FileInfo(entry.Key).Length)
+                                updated.Add(entry.Key);
+                        }
+                    }
+
+                    var concatDeletedUpdated = deleted.Concat(updated);
+                    for (int i = 0; i < allPhotoFiles.Count; i++)
+                    {
+                        var photoFilePath = allPhotoFiles[i];
+                        if (concatDeletedUpdated.Any(x => x == photoFilePath))
+                            continue;
+
+                        if (!allPhotosInDb.ContainsKey(photoFilePath))
+                            added.Add(photoFilePath);
+                    }
+
+                    _logger.LogInformation($"Found {added.Count} new photos, {updated.Count} updated photos, and {deleted.Count} deleted photos");
+
+                    if (added.Count > 0)
+                    {
+                        await ProcessAndSaveEntity(added, dbContext);
+                    }
+                    if (updated.Count > 0)
+                    {
+                        await ProcessAndUpdateEntity(updated, _dbContextFactory);
+                    }
+                    if (deleted.Count > 0)
+                    {
+                        List<PhotoDto> deletedPhotoDto = new List<PhotoDto>();
+                        foreach (var _deleted in deleted)
+                        {
+                            PhotoDto photoDto = null;
+                            allPhotosInDb.TryGetValue(allPhotosInDb.Keys.First(x => x == _deleted), out photoDto);
+                            if (photoDto != null)
+                                deletedPhotoDto.Add(photoDto);
+                        }
+                        await DeleteEntity(deletedPhotoDto, _dbContextFactory);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -135,7 +185,45 @@ namespace PhotoApp.APIs
             }
         }
 
-        private async Task<ConcurrentDictionary<string, PhotoDto>> EnumFilesAndCreateThumbnailAsync(List<string> files)
+        private async Task ProcessAndSaveEntity(List<string> files, AppDbContext dbContext)
+        {
+            var allPhotoFilesChunks = MiscUtils.BreakIntoChunks<string>(files, 5);
+            for (int i = 0; i < allPhotoFilesChunks.Count; i++)
+            {
+                var dicPhotos = await CreateDtoAndThumbnailAsync(allPhotoFilesChunks[i]);
+                if (dicPhotos.Count > 0)
+                {
+                    await dbContext.Photos.AddRangeAsync(dicPhotos.Values);
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+        }
+
+        private async Task ProcessAndUpdateEntity(List<string> files, AppDbContextFactory dbContextFactory)
+        {
+            var nonQueryService = new NonQueryDataService<PhotoDto>(dbContextFactory);
+            var allPhotoFilesChunks = MiscUtils.BreakIntoChunks<string>(files, 5);
+            for (int i = 0; i < allPhotoFilesChunks.Count; i++)
+            {
+                var dicPhotos = await CreateDtoAndThumbnailAsync(allPhotoFilesChunks[i]);
+
+                foreach (var photoToUpdate in dicPhotos)
+                {
+                    await nonQueryService.Update(photoToUpdate.Value.Id, photoToUpdate.Value);
+                }
+            }
+        }
+
+        private async Task DeleteEntity(List<PhotoDto> files, AppDbContextFactory dbContextFactory)
+        {
+            var nonQueryService = new NonQueryDataService<PhotoDto>(dbContextFactory);
+            foreach (var photoToUpdate in files)
+            {
+                await nonQueryService.Delete(photoToUpdate.Id);
+            }
+        }
+
+        private async Task<ConcurrentDictionary<string, PhotoDto>> CreateDtoAndThumbnailAsync(List<string> files)
         {
             var dicPhotos = new ConcurrentDictionary<string, PhotoDto>();
             Parallel.ForEach(files, async (x) =>
@@ -172,6 +260,7 @@ namespace PhotoApp.APIs
                 {
                     Title = title,
                     AlbumPath = albumPath,
+                    Filesize = new FileInfo(x).Length,
                     Date = snapshot.HasValue
                         ? snapshot?.ToString(CultureInfo.InvariantCulture)
                         : new DateTime(2001, 01, 01).ToString(CultureInfo.InvariantCulture)

@@ -15,9 +15,10 @@ namespace PhotoApp.Db.Extensions
             host.ConfigureServices((context, services) =>
             {
                 string connectionString = context.Configuration.GetConnectionString("sqlite");
-                Action<DbContextOptionsBuilder> configureDbContext = 
+                Action<DbContextOptionsBuilder> configureDbContext =
                     o => o.UseSqlite(connectionString)
-                        .AddInterceptors(new QueryCommandInterceptor());
+                        .AddInterceptors(new QueryCommandInterceptor())
+                        .UseLazyLoadingProxies();
 
                 services.AddDbContext<AppDbContext>(configureDbContext);
                 services.AddSingleton<AppDbContextFactory>(new AppDbContextFactory(configureDbContext));
