@@ -6,8 +6,10 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using EFCore.BulkExtensions;
 using Microsoft.Extensions.Logging;
 using PhotoApp.Db.DbContext;
@@ -22,6 +24,7 @@ namespace PhotoApp.APIs
 
     public class LibMonitor
     {
+        private readonly IMeasureTimePerformance _measureTimePerformance;
         private readonly AppDbContextFactory _dbContextFactory;
         private readonly ILogger<LibMonitor> _logger;
         private string dbName = "PhotosLibrary.db";
@@ -31,13 +34,15 @@ namespace PhotoApp.APIs
         private System.Threading.Timer _timer;
         private static int _lockFlag = 0;
 
-
         readonly TimeSpan startTimeSpan = TimeSpan.Zero;
         readonly TimeSpan periodTimeSpan = TimeSpan.FromHours(1);
 
-        public LibMonitor(AppDbContextFactory dbContextFactory, ILogger<LibMonitor> logger)
+        public LibMonitor(AppDbContextFactory dbContextFactory, 
+            IMeasureTimePerformance measureTimePerformance,
+            ILogger<LibMonitor> logger)
         {
             _dbContextFactory = dbContextFactory;
+            _measureTimePerformance = measureTimePerformance;
             _logger = logger;
         }
 
@@ -53,7 +58,13 @@ namespace PhotoApp.APIs
                     Monitor.Enter(_lockFlag);
                     _logger.LogDebug($"$Access given to Thread {Thread.CurrentThread.ManagedThreadId}");
                     _logger.LogInformation("Scan about to start...");
+
+                    _measureTimePerformance.Init();
+                    _measureTimePerformance.Start();
+
                     await SyncDb();
+                    _measureTimePerformance.Stop();
+                    _logger.LogInformation($"It took {_measureTimePerformance.GetElapsedTime()} to sync photos with database");
                     // free the lock
                     Interlocked.Decrement(ref _lockFlag);
                 }
@@ -242,10 +253,22 @@ namespace PhotoApp.APIs
                 var title = Path.GetFileName(x);
                 var albumPath = Path.GetDirectoryName(x);
                 DateTime? snapshot;
+                PhotoExif? photoExif = null;
                 try
                 {
                     var tag = tfile.Tag as TagLib.Image.CombinedImageTag;
                     snapshot = tag?.DateTime;
+                    if (tag?.Exif != null)
+                    {
+                        photoExif = new PhotoExif()
+                        {
+                            Manufacturer = tag.Exif.Make,
+                            Model = tag.Exif.Model,
+                            ExposureTime = tag.Exif.ExposureTime,
+                            FNumber = tag.Exif.FNumber,
+                            Iso = tag.Exif.ISOSpeedRatings
+                        };
+                    }
                 }
                 finally
                 {
@@ -259,7 +282,8 @@ namespace PhotoApp.APIs
                     Filesize = new FileInfo(x).Length,
                     Date = snapshot.HasValue
                         ? snapshot?.ToString(CultureInfo.InvariantCulture)
-                        : new DateTime(2001, 01, 01).ToString(CultureInfo.InvariantCulture)
+                        : new DateTime(2001, 01, 01).ToString(CultureInfo.InvariantCulture),
+                    PhotoExif = photoExif != null ? PhotoExif.ToJson(photoExif) : null
                 };
 
                 try

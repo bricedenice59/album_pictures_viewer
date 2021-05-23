@@ -17,7 +17,6 @@ namespace PhotoApp.Db.Extensions
                 string connectionString = context.Configuration.GetConnectionString("sqlite");
                 Action<DbContextOptionsBuilder> configureDbContext =
                     o => o.UseSqlite(connectionString)
-                        .AddInterceptors(new QueryCommandInterceptor())
                         .UseLazyLoadingProxies();
 
                 services.AddDbContext<AppDbContext>(configureDbContext);

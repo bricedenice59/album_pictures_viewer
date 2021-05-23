@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PhotoApp.Db.Models;
+using PhotoApp.Db.QueryService;
 
 namespace PhotoApp.Db.DbContext
 {
@@ -15,6 +16,15 @@ namespace PhotoApp.Db.DbContext
         public DbSet<LastUpdateDto> LastUpdates { get; set; }
 
         public AppDbContext(DbContextOptions options) : base(options) { }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+#if DEBUG
+            optionsBuilder.AddInterceptors(new QueryCommandInterceptor());
+#endif
+            base.OnConfiguring(optionsBuilder);
+        }
+
 
         /// <summary>
         /// Call this at the beginning of every disk-to-database sync.

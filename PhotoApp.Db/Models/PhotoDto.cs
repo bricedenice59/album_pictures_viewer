@@ -15,6 +15,8 @@ namespace PhotoApp.Db.Models
         public byte[] Thumbnail { get; set; }
 
         public double Filesize { get; set; }
+        
+        public string PhotoExif { get; set; }
 
         public override bool Equals(object obj)
         {

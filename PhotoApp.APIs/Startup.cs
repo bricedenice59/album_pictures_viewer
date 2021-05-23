@@ -35,6 +35,7 @@ namespace PhotoApp.APIs
         {
             services.AddControllers();
             services.AddSingleton<LibMonitor>();
+            services.AddSingleton<IMeasureTimePerformance, MeasureTimePerformance>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
