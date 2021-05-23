@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EFCore.BulkExtensions;
 using Microsoft.Extensions.Logging;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
@@ -152,14 +153,6 @@ namespace PhotoApp.APIs
 
                     _logger.LogInformation($"Found {added.Count} new photos, {updated.Count} updated photos, and {deleted.Count} deleted photos");
 
-                    if (added.Count > 0)
-                    {
-                        await ProcessAndSaveEntity(added, dbContext);
-                    }
-                    if (updated.Count > 0)
-                    {
-                        await ProcessAndUpdateEntity(updated, _dbContextFactory);
-                    }
                     if (deleted.Count > 0)
                     {
                         List<PhotoDto> deletedPhotoDto = new List<PhotoDto>();
@@ -170,14 +163,21 @@ namespace PhotoApp.APIs
                             if (photoDto != null)
                                 deletedPhotoDto.Add(photoDto);
                         }
-                        await DeleteEntity(deletedPhotoDto, _dbContextFactory);
+                        await DeleteEntity(deletedPhotoDto, dbContext);
+                    }
+                    if (added.Count > 0)
+                    {
+                        await ProcessAndSaveEntity(added, dbContext);
+                    }
+                    if (updated.Count > 0)
+                    {
+                        await ProcessAndUpdateEntity(updated, _dbContextFactory);
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-
             }
             finally
             {
@@ -214,13 +214,9 @@ namespace PhotoApp.APIs
             }
         }
 
-        private async Task DeleteEntity(List<PhotoDto> files, AppDbContextFactory dbContextFactory)
+        private async Task DeleteEntity(List<PhotoDto> files, AppDbContext dbContext)
         {
-            var nonQueryService = new NonQueryDataService<PhotoDto>(dbContextFactory);
-            foreach (var photoToUpdate in files)
-            {
-                await nonQueryService.Delete(photoToUpdate.Id);
-            }
+            await dbContext.BulkDeleteAsync(files);
         }
 
         private async Task<ConcurrentDictionary<string, PhotoDto>> CreateDtoAndThumbnailAsync(List<string> files)
