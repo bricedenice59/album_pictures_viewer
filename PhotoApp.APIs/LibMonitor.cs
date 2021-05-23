@@ -6,18 +6,17 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 using EFCore.BulkExtensions;
+using ImageMagick;
 using Microsoft.Extensions.Logging;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
 using PhotoApp.Db.QueryService;
 using PhotoApp.Utils;
-using TagLib.Riff;
 using File = System.IO.File;
+using ImageUtils = PhotoApp.APIs.Utils.ImageUtils;
 
 namespace PhotoApp.APIs
 {
@@ -198,7 +197,7 @@ namespace PhotoApp.APIs
 
         private async Task ProcessAndSaveEntity(List<string> files, AppDbContext dbContext)
         {
-            var allPhotoFilesChunks = MiscUtils.BreakIntoChunks<string>(files, 5);
+            var allPhotoFilesChunks = MiscUtils.BreakIntoChunks<string>(files, 25);
             for (int i = 0; i < allPhotoFilesChunks.Count; i++)
             {
                 var dicPhotos = await CreateDtoAndThumbnailAsync(allPhotoFilesChunks[i]);
@@ -285,38 +284,34 @@ namespace PhotoApp.APIs
                         : new DateTime(2001, 01, 01).ToString(CultureInfo.InvariantCulture),
                     PhotoExif = photoExif != null ? PhotoExif.ToJson(photoExif) : null
                 };
-
+                MagickImage image = null;
                 try
                 {
                     _logger.LogInformation($"Processing file {x}");
-                    // Load image.
-                    using (Image image = Image.FromFile(x))
-                    {
-                        // Compute thumbnail size.
-                        Size thumbnailSize = PhotoApp.Utils.ImageUtils.GetThumbnailSize(image);
 
-                        if (thumbnailSize.Equals(image.Size) ||
-                            (image.Width < thumbnailSize.Width || image.Height < thumbnailSize.Height))
+                    // Load image.
+                    image = new MagickImage(x);
+
+                    // Compute thumbnail size.
+                    MagickGeometry thumbnailSize = ImageUtils.GetThumbnailSize(image);
+
+                    if (image.Width < thumbnailSize.Width || image.Height < thumbnailSize.Height)
+                    {
+                        //if no shrinking is occurring, return the original bytes
+                        using (var outStream = new MemoryStream())
                         {
-                            //if no shrinking is occurring, return the original bytes
-                            using (var outStream = new MemoryStream())
-                            {
-                                image.Save(outStream, ImageFormat.Jpeg);
-                                photoDto.Thumbnail = outStream.ToArray();
-                            }
+                            await image.WriteAsync(outStream, MagickFormat.Jpg);
+                            photoDto.Thumbnail = outStream.ToArray();
                         }
-                        else
+                    }
+                    else
+                    {
+                        // Get thumbnail.
+                        image.Thumbnail(new MagickGeometry(thumbnailSize.Width, thumbnailSize.Height));
+                        using (var outStream = new MemoryStream())
                         {
-                            // Get thumbnail.
-                            using (var thumbnail = image.GetThumbnailImage(thumbnailSize.Width,
-                                thumbnailSize.Height, null, IntPtr.Zero))
-                            {
-                                using (var outStream = new MemoryStream())
-                                {
-                                    thumbnail.Save(outStream, ImageFormat.Jpeg);
-                                    photoDto.Thumbnail = outStream.ToArray();
-                                }
-                            }
+                            await image.WriteAsync(outStream, MagickFormat.Jpg);
+                            photoDto.Thumbnail = outStream.ToArray();
                         }
                     }
 
@@ -325,6 +320,10 @@ namespace PhotoApp.APIs
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
+                }
+                finally
+                {
+                    image?.Dispose();
                 }
             });
             return dicPhotos;

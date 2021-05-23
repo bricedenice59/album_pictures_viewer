@@ -1,11 +1,11 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
+using ImageMagick;
 
-namespace PhotoApp.Utils
+namespace PhotoApp.APIs.Utils
 {
     public class ImageUtils
     {
-        public static Size GetThumbnailSize(Image original)
+        public static MagickGeometry GetThumbnailSize(MagickImage original)
         {
             // Maximum size of any dimension.
             const int maxPixels = 150;
@@ -17,7 +17,7 @@ namespace PhotoApp.Utils
             // Return original size if image is smaller than maxPixels
             if (originalWidth <= maxPixels || originalHeight <= maxPixels)
             {
-                return new Size(originalWidth, originalHeight);
+                return new MagickGeometry(originalWidth, originalHeight);
             }
 
             // Compute best factor to scale entire image based on larger dimension.
@@ -32,7 +32,7 @@ namespace PhotoApp.Utils
             }
 
             // Return thumbnail size.
-            return new Size((int)(originalWidth * factor), (int)(originalHeight * factor));
+            return new MagickGeometry((int)(originalWidth * factor), (int)(originalHeight * factor));
         }
     }
 }
