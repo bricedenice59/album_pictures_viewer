@@ -21,7 +21,7 @@ using ImageUtils = PhotoApp.APIs.Utils.ImageUtils;
 namespace PhotoApp.APIs
 {
 
-    public class LibMonitor
+    public class LibMonitor : ILibMonitor
     {
         private readonly IMeasureTimePerformance _measureTimePerformance;
         private readonly AppDbContextFactory _dbContextFactory;
@@ -32,9 +32,12 @@ namespace PhotoApp.APIs
 
         private System.Threading.Timer _timer;
         private static int _lockFlag = 0;
-
+        private int chunkSize = 5;
         readonly TimeSpan startTimeSpan = TimeSpan.Zero;
         readonly TimeSpan periodTimeSpan = TimeSpan.FromHours(1);
+
+        public bool IsBusy { get; set; }
+        public int ScanCompletionPercentage { get; set; }
 
         public LibMonitor(AppDbContextFactory dbContextFactory, 
             IMeasureTimePerformance measureTimePerformance,
@@ -53,6 +56,7 @@ namespace PhotoApp.APIs
 
                 if (Interlocked.CompareExchange(ref _lockFlag, 1, 0) == 0)
                 {
+                    IsBusy = true;
                     _logger.LogInformation("Monitoring photo folder...");
                     Monitor.Enter(_lockFlag);
                     _logger.LogDebug($"$Access given to Thread {Thread.CurrentThread.ManagedThreadId}");
@@ -64,8 +68,11 @@ namespace PhotoApp.APIs
                     await SyncDb();
                     _measureTimePerformance.Stop();
                     _logger.LogInformation($"It took {_measureTimePerformance.GetElapsedTime()} to sync photos with database");
+                    
                     // free the lock
                     Interlocked.Decrement(ref _lockFlag);
+                    IsBusy = false;
+                    ScanCompletionPercentage = 0;
                 }
                 else
                 {
@@ -97,6 +104,7 @@ namespace PhotoApp.APIs
 
         private async Task SyncDb()
         {
+            ScanCompletionPercentage = 0;
             var dbContext = _dbContextFactory.CreateDbContext();
 
             //check if db is in music folder, if not copy it
@@ -197,7 +205,8 @@ namespace PhotoApp.APIs
 
         private async Task ProcessAndSaveEntity(List<string> files, AppDbContext dbContext)
         {
-            var allPhotoFilesChunks = MiscUtils.BreakIntoChunks<string>(files, 25);
+            int intNbFilesToProcess = files.Count;
+            var allPhotoFilesChunks = MiscUtils.BreakIntoChunks<string>(files, chunkSize);
             for (int i = 0; i < allPhotoFilesChunks.Count; i++)
             {
                 var dicPhotos = await CreateDtoAndThumbnailAsync(allPhotoFilesChunks[i]);
@@ -206,13 +215,15 @@ namespace PhotoApp.APIs
                     await dbContext.Photos.AddRangeAsync(dicPhotos.Values);
                     await dbContext.SaveChangesAsync();
                 }
+                ScanCompletionPercentage = Convert.ToInt32(((double)(i * chunkSize) / (double)intNbFilesToProcess) * 100);
             }
         }
 
         private async Task ProcessAndUpdateEntity(List<string> files, AppDbContextFactory dbContextFactory)
         {
+            int intNbFilesToProcess = files.Count;
             var nonQueryService = new NonQueryDataService<PhotoDto>(dbContextFactory);
-            var allPhotoFilesChunks = MiscUtils.BreakIntoChunks<string>(files, 5);
+            var allPhotoFilesChunks = MiscUtils.BreakIntoChunks<string>(files, chunkSize);
             for (int i = 0; i < allPhotoFilesChunks.Count; i++)
             {
                 var dicPhotos = await CreateDtoAndThumbnailAsync(allPhotoFilesChunks[i]);
@@ -221,6 +232,7 @@ namespace PhotoApp.APIs
                 {
                     await nonQueryService.Update(photoToUpdate.Value.Id, photoToUpdate.Value);
                 }
+                ScanCompletionPercentage = Convert.ToInt32(((double)(i * chunkSize) / (double)intNbFilesToProcess) * 100);
             }
         }
 
@@ -232,56 +244,56 @@ namespace PhotoApp.APIs
         private async Task<ConcurrentDictionary<string, PhotoDto>> CreateDtoAndThumbnailAsync(List<string> files)
         {
             var dicPhotos = new ConcurrentDictionary<string, PhotoDto>();
+
             Parallel.ForEach(files, async (x) =>
             {
+                string file = new string(x);
                 TagLib.File tfile = null;
                 try
                 {
-                    tfile = TagLib.File.Create(x);
+                    tfile = TagLib.File.Create(file);
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError($"File {x} ignored as TagLib can't parse it. {e.Message}");
+                    _logger.LogError($"File {file} ignored as TagLib can't parse it. {e.Message}");
                 }
 
-                if (tfile == null)
-                {
-                    return;
-                }
-
-                var title = Path.GetFileName(x);
-                var albumPath = Path.GetDirectoryName(x);
+                var title = Path.GetFileName(file);
+                var albumPath = Path.GetDirectoryName(file);
                 DateTime? snapshot;
-                PhotoExif? photoExif = null;
+                PhotoExif photoExif = null;
                 try
                 {
-                    var tag = tfile.Tag as TagLib.Image.CombinedImageTag;
-                    snapshot = tag?.DateTime;
+                    var tag = tfile?.Tag as TagLib.Image.CombinedImageTag;
+                    snapshot = tag?.DateTime ?? new FileInfo(file).CreationTimeUtc;
                     if (tag?.Exif != null)
                     {
-                        photoExif = new PhotoExif()
-                        {
-                            Manufacturer = tag.Exif.Make,
-                            Model = tag.Exif.Model,
-                            ExposureTime = tag.Exif.ExposureTime,
-                            FNumber = tag.Exif.FNumber,
-                            Iso = tag.Exif.ISOSpeedRatings
-                        };
+                        if (!(string.IsNullOrEmpty(tag.Exif.Make) &&
+                            string.IsNullOrEmpty(tag.Exif.Model) &&
+                            !tag.Exif.ExposureTime.HasValue &&
+                            !tag.Exif.FNumber.HasValue &&
+                            !tag.Exif.ISOSpeedRatings.HasValue))
+                            photoExif = new PhotoExif()
+                            {
+                                Manufacturer = tag.Exif.Make,
+                                Model = tag.Exif.Model,
+                                ExposureTime = tag.Exif.ExposureTime,
+                                FNumber = tag.Exif.FNumber,
+                                Iso = tag.Exif.ISOSpeedRatings
+                            };
                     }
                 }
                 finally
                 {
-                    tfile.Dispose();
+                    tfile?.Dispose();
                 }
 
                 PhotoDto photoDto = new PhotoDto()
                 {
                     Title = title,
                     AlbumPath = albumPath,
-                    Filesize = new FileInfo(x).Length,
-                    Date = snapshot.HasValue
-                        ? snapshot?.ToString(CultureInfo.InvariantCulture)
-                        : new DateTime(2001, 01, 01).ToString(CultureInfo.InvariantCulture),
+                    Filesize = new FileInfo(file).Length,
+                    Date = snapshot?.ToString(CultureInfo.InvariantCulture),
                     PhotoExif = photoExif != null ? PhotoExif.ToJson(photoExif) : null
                 };
                 MagickImage image = null;
@@ -290,7 +302,7 @@ namespace PhotoApp.APIs
                     _logger.LogInformation($"Processing file {x}");
 
                     // Load image.
-                    image = new MagickImage(x);
+                    image = new MagickImage(file);
 
                     // Compute thumbnail size.
                     MagickGeometry thumbnailSize = ImageUtils.GetThumbnailSize(image);
@@ -324,9 +336,19 @@ namespace PhotoApp.APIs
                 finally
                 {
                     image?.Dispose();
+                    file = null;
                 }
             });
             return dicPhotos;
         }
+    }
+
+    public interface ILibMonitor
+    {
+        public bool IsBusy { get; set; }
+
+        public int ScanCompletionPercentage { get; set; }
+
+        void MonitorFolder();
     }
 }

@@ -34,7 +34,7 @@ namespace PhotoApp.APIs
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddSingleton<LibMonitor>();
+            services.AddSingleton<ILibMonitor, LibMonitor>();
             services.AddSingleton<IMeasureTimePerformance, MeasureTimePerformance>();
         }
 
@@ -59,7 +59,7 @@ namespace PhotoApp.APIs
 
             Task.Run(() =>
             {
-                var libMonitor = app.ApplicationServices.GetService<LibMonitor>();
+                var libMonitor = app.ApplicationServices.GetService<ILibMonitor>();
                 libMonitor.MonitorFolder();
             });
         }
