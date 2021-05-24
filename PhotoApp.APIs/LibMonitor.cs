@@ -248,54 +248,42 @@ namespace PhotoApp.APIs
             Parallel.ForEach(files, async (x) =>
             {
                 string file = new string(x);
-                TagLib.File tfile = null;
-                try
-                {
-                    tfile = TagLib.File.Create(file);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError($"File {file} ignored as TagLib can't parse it. {e.Message}");
-                }
-
-                var title = Path.GetFileName(file);
-                var albumPath = Path.GetDirectoryName(file);
-                DateTime? snapshot;
-                PhotoExif photoExif = null;
-                try
-                {
-                    var tag = tfile?.Tag as TagLib.Image.CombinedImageTag;
-                    snapshot = tag?.DateTime ?? new FileInfo(file).CreationTimeUtc;
-                    if (tag?.Exif != null)
-                    {
-                        if (!(string.IsNullOrEmpty(tag.Exif.Make) &&
-                            string.IsNullOrEmpty(tag.Exif.Model) &&
-                            !tag.Exif.ExposureTime.HasValue &&
-                            !tag.Exif.FNumber.HasValue &&
-                            !tag.Exif.ISOSpeedRatings.HasValue))
-                            photoExif = new PhotoExif()
-                            {
-                                Manufacturer = tag.Exif.Make,
-                                Model = tag.Exif.Model,
-                                ExposureTime = tag.Exif.ExposureTime,
-                                FNumber = tag.Exif.FNumber,
-                                Iso = tag.Exif.ISOSpeedRatings
-                            };
-                    }
-                }
-                finally
-                {
-                    tfile?.Dispose();
-                }
-
+                var fileInfo = new FileInfo(file);
                 PhotoDto photoDto = new PhotoDto()
                 {
-                    Title = title,
-                    AlbumPath = albumPath,
-                    Filesize = new FileInfo(file).Length,
-                    Date = snapshot?.ToString(CultureInfo.InvariantCulture),
-                    PhotoExif = photoExif != null ? PhotoExif.ToJson(photoExif) : null
+                    Title = Path.GetFileName(file),
+                    AlbumPath = Path.GetDirectoryName(file),
+                    Filesize = fileInfo.Length,
+                    Date = fileInfo.CreationTimeUtc.ToString(CultureInfo.InvariantCulture),
+                    PhotoExif = null
                 };
+
+                //try
+                //{
+                //    var tag = tfile?.Tag as TagLib.Image.CombinedImageTag;
+                //    snapshot = tag?.DateTime ?? new FileInfo(file).CreationTimeUtc;
+                //    if (tag?.Exif != null)
+                //    {
+                //        if (!(string.IsNullOrEmpty(root.ExifPackage.Make) &&
+                //            string.IsNullOrEmpty(root.ExifPackage.Model) &&
+                //            !tag.Exif.ExposureTime.HasValue &&
+                //            !tag.Exif.FNumber.HasValue &&
+                //            !tag.Exif.ISOSpeedRatings.HasValue))
+                //            photoExif = new PhotoExif()
+                //            {
+                //                Manufacturer = root.ExifPackage.Make,
+                //                Model = root.ExifPackage.Model,
+                //                ExposureTime = tag.Exif.ExposureTime,
+                //                FNumber = tag.Exif.FNumber,
+                //                Iso = tag.Exif.ISOSpeedRatings
+                //            };
+                //    }
+                //}
+                //finally
+                //{
+                //    tfile?.Dispose();
+                //}
+
                 MagickImage image = null;
                 try
                 {
