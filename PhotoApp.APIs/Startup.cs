@@ -1,12 +1,15 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PhotoApp.Db.Models;
 using PhotoApp.Utils;
 
 namespace PhotoApp.APIs
@@ -34,7 +37,9 @@ namespace PhotoApp.APIs
             });
 
             services.AddControllers();
+            services.AddSingleton<IPasswordHasher<UserDto>, PasswordHasher<UserDto>>();
             services.AddSingleton<ILibMonitor, LibMonitor>();
+            services.AddSingleton<PhotoApp.APIs.AuthenticationServices.IAuthenticationService, PhotoApp.APIs.AuthenticationServices.AuthenticationService>();
             services.AddSingleton<IMeasureTimePerformance, MeasureTimePerformance>();
         }
 

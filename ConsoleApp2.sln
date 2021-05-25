@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhotoApp.Db", "PhotoApp.Db\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhotoApp.Utils", "PhotoApp.Utils\PhotoApp.Utils.csproj", "{98AF3EF2-FA14-46EF-82B3-D3328115CD1E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotoApp.Web", "PhotoApp.Web\PhotoApp.Web.csproj", "{93E0A172-F9E1-45D1-9C14-6FAEB693A3B6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{98AF3EF2-FA14-46EF-82B3-D3328115CD1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{98AF3EF2-FA14-46EF-82B3-D3328115CD1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{98AF3EF2-FA14-46EF-82B3-D3328115CD1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93E0A172-F9E1-45D1-9C14-6FAEB693A3B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93E0A172-F9E1-45D1-9C14-6FAEB693A3B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93E0A172-F9E1-45D1-9C14-6FAEB693A3B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93E0A172-F9E1-45D1-9C14-6FAEB693A3B6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
