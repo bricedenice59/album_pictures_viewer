@@ -5,18 +5,17 @@ using Microsoft.EntityFrameworkCore;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
 using PhotoApp.Utils.Exceptions;
+using PhotoApp.Utils.Models;
 
 namespace PhotoApp.APIs.AuthenticationServices
 {
     public class AuthenticationService : IAuthenticationService
     {
         private readonly AppDbContextFactory _dbContextFactory;
-        private readonly IPasswordHasher<UserDto> _passwordHasher;
 
-        public AuthenticationService(AppDbContextFactory dbContextFactory, IPasswordHasher<UserDto> passwordHasher)
+        public AuthenticationService(AppDbContextFactory dbContextFactory)
         {
             _dbContextFactory = dbContextFactory;
-            _passwordHasher = passwordHasher;
         }
 
         public async Task<UserDto> Login(string username, string password)
@@ -34,9 +33,8 @@ namespace PhotoApp.APIs.AuthenticationServices
                 throw new UserNotFoundException(username);
             }
 
-            var passwordResult = _passwordHasher.VerifyHashedPassword(storedUser,storedUser.PasswordHash, password);
-
-            if(passwordResult != PasswordVerificationResult.Success)
+            var passwordResult = storedUser.PasswordHash.Equals(password);
+            if (!passwordResult)
             {
                 throw new InvalidPasswordException(username, password);
             }

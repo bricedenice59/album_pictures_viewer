@@ -4,29 +4,35 @@ using PhotoApp.Web.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using PhotoApp.Utils;
 using PhotoApp.Utils.Models;
+using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace PhotoApp.Web.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly IPasswordHasher<User> _passwordHasher;
+        private readonly IConfiguration _configuration;
 
-        //private const string Baseurl = "http://bgcode.synology.me:7500/";
-        private const string Baseurl = "https://localhost:50995";
+        private const string Baseurl = "http://bgcode.synology.me:7500";
+        //private const string Baseurl = "https://localhost:50995";
         private const string ApiAuthentification = "api/Users/Login";
 
-        public HomeController(IPasswordHasher<User> passwordHasher, ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger)
         {
-            _passwordHasher = passwordHasher;
             _logger = logger;
         }
 
@@ -34,6 +40,7 @@ namespace PhotoApp.Web.Controllers
         {
             return View();
         }
+
 
         [HttpPost]
         public async Task<IActionResult> Index([Bind] User user)
@@ -44,7 +51,7 @@ namespace PhotoApp.Web.Controllers
                 return BadRequest();
             }
 
-            user.Password = _passwordHasher.HashPassword(user, user.Password);
+            user.Password = HashUtils.Generate(user.Password);
 
             var json = JsonConvert.SerializeObject(user);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -58,12 +65,17 @@ namespace PhotoApp.Web.Controllers
                     using (HttpContent resContent = response.Content)
                     {
                         var jsonResponse = await resContent.ReadAsStringAsync();
-                        return View();
+                        if (!string.IsNullOrEmpty(jsonResponse))
+                        {
+                           var result = JsonConvert.DeserializeObject<LoginResult>(jsonResponse);
+                           if (result.IsSuccessful)
+                               HttpContext.Session.SetString("token", result.Token);
+                        }
                     }
                 }
             }
 
-            return View();
+            return View("Index");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using PhotoApp.Db.Models;
 using PhotoApp.Utils;
 
@@ -26,18 +28,26 @@ namespace PhotoApp.APIs
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAuthentication(options =>
+            services.AddAuthentication("OAuth")
+            .AddJwtBearer("OAuth", options =>
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
-            {
-                options.Authority = $"https://{Configuration["Auth0:Domain"]}/";
-                options.Audience = Configuration["Auth0:Audience"];
+                var secretBytes = Encoding.UTF8.GetBytes(Configuration["Auth0:Secret"]);
+                var key = new SymmetricSecurityKey(secretBytes);
+
+                options.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidIssuer = Configuration["Auth0:Issuer"],
+                    ValidAudience = Configuration["Auth0:Audience"],
+                    IssuerSigningKey = key,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true
+                };
+
             });
 
             services.AddControllers();
-            services.AddSingleton<IPasswordHasher<UserDto>, PasswordHasher<UserDto>>();
             services.AddSingleton<ILibMonitor, LibMonitor>();
             services.AddSingleton<PhotoApp.APIs.AuthenticationServices.IAuthenticationService, PhotoApp.APIs.AuthenticationServices.AuthenticationService>();
             services.AddSingleton<IMeasureTimePerformance, MeasureTimePerformance>();
