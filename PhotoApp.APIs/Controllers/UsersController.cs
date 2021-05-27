@@ -42,10 +42,10 @@ namespace PhotoApp.APIs.Controllers
         [HttpPost]
         [AllowAnonymous]
         [Route("{Login}")]
-        public async Task<ActionResult<string>> Login([FromBody] object credentialsJson)
+        public async Task<IActionResult> Login([FromBody] object credentialsJson)
         {
             if (credentialsJson == null)
-                return JsonConvert.SerializeObject(new LoginResult() { IsSuccessful = false });
+                return Unauthorized();
 
             var obj = JsonConvert.DeserializeObject<User>(credentialsJson.ToString());
             bool authenticationOk = false;
@@ -64,7 +64,7 @@ namespace PhotoApp.APIs.Controllers
                 IsSuccessful = authenticationOk,
                 Token = authenticationOk == true ? GetToken(obj) : null
             };
-            return JsonConvert.SerializeObject(result);
+            return Ok(result);
         }
 
         private string GetToken(User user)

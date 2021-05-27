@@ -8,7 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using PhotoApp.APIs.AuthenticationServices;
 using PhotoApp.Utils;
 using PhotoApp.Utils.Models;
 using PhotoApp.Web.Models;
@@ -27,9 +30,10 @@ namespace PhotoApp.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSession(options =>
+                options.IdleTimeout = TimeSpan.FromMinutes(30));
             services.AddControllersWithViews();
-
-            services.AddSession();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -51,7 +55,7 @@ namespace PhotoApp.Web
             app.UseRouting();
             app.UseSession();
             app.UseAuthorization();
-
+            app.UseMiddleware<JwtInHeaderMiddleware>();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(

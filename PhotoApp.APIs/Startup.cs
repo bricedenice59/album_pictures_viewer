@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using PhotoApp.APIs.AuthenticationServices;
 using PhotoApp.Db.Models;
 using PhotoApp.Utils;
 
@@ -42,7 +43,13 @@ namespace PhotoApp.APIs
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true
+                    RequireExpirationTime = false,
+                    ValidateIssuerSigningKey = true,
+
+                    // Allow to use seconds for expiration of token
+                    // Required only when token lifetime less than 5 minutes
+                    // THIS ONE
+                    ClockSkew = TimeSpan.Zero
                 };
 
             });
@@ -68,7 +75,6 @@ namespace PhotoApp.APIs
             app.UseAuthentication();
 
             app.UseAuthorization();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

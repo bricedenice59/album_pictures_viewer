@@ -1,31 +1,59 @@
-﻿@model PhotoApp.Utils.Models.User
+﻿@using Microsoft.AspNetCore.Http
+@model PhotoApp.Utils.Models.HomeViewModel
+@inject IHttpContextAccessor HttpContextAccessor
 @{
     ViewData["Title"] = "Home Page";
 }
 
-@using (Html.BeginForm())
+@if (HttpContextAccessor.HttpContext.Session.GetString("IsLogged") == true.ToString())
 {
-    <div class="container">
-        <div class="row">
-            <div class="col-sm-4"></div>
-            <div class="col-sm-4">
-                <form asp-action="Index">
-                    <div class="form-group">
-                        <label>Admin ID</label>
-                        <input asp-for="UserId" class="form-control" type="text"/>
-                        @Html.ValidationMessageFor(m => m.UserId)
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input asp-for="Password" class="form-control" type="password" />
-                        @Html.ValidationMessageFor(m => m.Password)
-                    </div>
-                    <div class="form-group">
-                        <input type="submit" class="btn btn-primary" value="Login"/>
-                    </div>
-                </form>
+    @using (Html.BeginForm("CheckFile", "Home", FormMethod.Post))
+    {
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-4"></div>
+                <div class="col-sm-4">
+                    <form method="post">
+                        <div class="form-group">
+                            <label>Filename :</label>
+                            <input asp-for="File.Filename" class="form-control" type="text" />
+                            @Html.ValidationMessageFor(m => m.File.Filename, "", new { @class = "text-danger" })
+                        </div>
+                        <div class="form-group">
+                            <input type="submit" class="btn btn-primary" value=""/>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="col-sm-4"></div>
         </div>
-    </div>
+    }
+}
+else
+{
+    @using (Html.BeginForm("Login","Home", FormMethod.Post))
+    {
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-4"></div>
+                <div class="col-sm-4">
+                    <form method="post">
+                        <div class="form-group">
+                            <label>Admin ID</label>
+                            <input asp-for="User.UserId" class="form-control" type="text" />
+                            @Html.ValidationMessageFor(m => m.User.UserId, "", new { @class = "text-danger" })
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input asp-for="User.Password" class="form-control" type="password" />
+                            @Html.ValidationMessageFor(m => m.User.Password, "", new { @class = "text-danger" })
+                        </div>
+                        <div class="form-group">
+                            <input type="submit" class="btn btn-primary" value="Login" />
+                        </div>
+                    </form>
+                </div>
+                <div class="col-sm-4"></div>
+            </div>
+        </div>
+    }
 }
