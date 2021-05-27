@@ -62,34 +62,11 @@ namespace PhotoApp.APIs.Controllers
             var result = new LoginResult()
             {
                 IsSuccessful = authenticationOk,
-                Token = authenticationOk == true ? GetToken(obj) : null
+                Token = authenticationOk == true 
+                    ? JwtTokenUtils.GetToken(obj, _configuration["Auth0:Issuer"], _configuration["Auth0:Audience"],_configuration["Auth0:Secret"]) 
+                    : null
             };
             return Ok(result);
-        }
-
-        private string GetToken(User user)
-        {
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            };
-
-            var secretBytes = Encoding.UTF8.GetBytes(_configuration["Auth0:Secret"]);
-            var key = new SymmetricSecurityKey(secretBytes);
-            var algorithm = SecurityAlgorithms.HmacSha256;
-            var signingCredentials = new SigningCredentials(key, algorithm);
-
-            var token = new JwtSecurityToken(
-                _configuration["Auth0:Issuer"],
-                _configuration["Auth0:Audience"],
-                claims,
-                DateTime.Now,
-                DateTime.Now.AddDays(1),
-                signingCredentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

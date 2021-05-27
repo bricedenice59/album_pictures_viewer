@@ -58,6 +58,8 @@ namespace PhotoApp.APIs
             services.AddSingleton<ILibMonitor, LibMonitor>();
             services.AddSingleton<PhotoApp.APIs.AuthenticationServices.IAuthenticationService, PhotoApp.APIs.AuthenticationServices.AuthenticationService>();
             services.AddSingleton<IMeasureTimePerformance, MeasureTimePerformance>();
+
+            services.AddHostedService<ApplicationPartsLogger>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

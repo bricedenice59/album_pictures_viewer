@@ -30,7 +30,8 @@ namespace PhotoApp.Web.Controllers
 
         //private const string Baseurl = "http://bgcode.synology.me:7500";
         private const string Baseurl = "https://localhost:4000";
-        private const string ApiAuthentification = "api/Users/Login";
+        private const string ApiLoginAuthentification = "api/Users/Login";
+        private const string ApiGetRefreshToken = "api/Auth/GetRefreshedToken";
 
         public HomeController(IHttpContextAccessor httpContext, ILogger<HomeController> logger)
         {
@@ -54,6 +55,35 @@ namespace PhotoApp.Web.Controllers
             }
 
             var token = _httpContext.HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (JWTService.HasTokenExpired(token, TimeSpan.FromSeconds(30)))
+            {
+                //delete the old variable cookie
+                Response.Cookies.Delete("X-Access-Token");
+
+                using (var client = new HttpClient())
+                {
+                    var response = await client.PostAsync($"{Baseurl}/{ApiGetRefreshToken}", new StringContent(token));
+
+                    //Checking the response is successful or not which is sent using HttpClient  
+                    if (response.IsSuccessStatusCode)
+                    {
+                        using (HttpContent resContent = response.Content)
+                        {
+                            var jsonResponse = await resContent.ReadAsStringAsync();
+                            if (!string.IsNullOrEmpty(jsonResponse))
+                            {
+                                var result = JsonConvert.DeserializeObject<LoginResult>(jsonResponse);
+                                if (result.IsSuccessful)
+                                {
+                                    //var token = result.Token;
+                                    //Response.Cookies.Append("X-Access-Token", token,
+                                    //    new CookieOptions() {HttpOnly = true, SameSite = SameSiteMode.Strict});
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             var fileDto = homeViewModel.File;
 
@@ -94,7 +124,7 @@ namespace PhotoApp.Web.Controllers
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             using (var client = new HttpClient())
             {
-                var response = await client.PostAsync($"{Baseurl}/{ApiAuthentification}", content);
+                var response = await client.PostAsync($"{Baseurl}/{ApiLoginAuthentification}", content);
 
                 //Checking the response is successful or not which is sent using HttpClient  
                 if (response.IsSuccessStatusCode)
