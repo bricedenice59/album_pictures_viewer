@@ -1,10 +1,15 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PhotoApp.APIs.AuthenticationServices;
+using PhotoApp.Db.DbContext;
+using PhotoApp.Db.Models;
 using PhotoApp.Utils.Models;
 
 namespace PhotoApp.APIs.Controllers
@@ -16,13 +21,16 @@ namespace PhotoApp.APIs.Controllers
         private readonly ILogger<AuthController> _logger;
         private readonly IConfiguration _configuration;
         private readonly IAuthenticationService _authenticationService;
+        private readonly AppDbContextFactory _dbContextFactory;
 
         public AuthController(IConfiguration configuration, 
             IAuthenticationService authenticationService,
+            AppDbContextFactory dbContextFactory,
             ILogger<AuthController> logger)
         {
             _configuration = configuration;
             _authenticationService = authenticationService;
+            _dbContextFactory = dbContextFactory;
             _logger = logger;
         }
 
@@ -30,18 +38,40 @@ namespace PhotoApp.APIs.Controllers
         [HttpPost]
         [AllowAnonymous]
         [Route("GetRefreshedToken")]
-        private IActionResult GetRefreshedToken([FromBody] string token)
+        public async Task<IActionResult> GetRefreshedToken([FromBody] object userObj)
         {
-            // trim 'Bearer ' from the start since its just a prefix for the token string
-            if (token.Contains("Bearer "))
-                token = token.Substring(7);
+            if (userObj == null)
+                return Unauthorized();
 
-            //first is it a valid token ?
-            var idTokenUser = JwtTokenUtils.ValidateJwtToken(token, _configuration["Auth0:Secret"]);
-            if (idTokenUser == null)
-                return null;
+            var definition = new { userId = "" };
 
-            return Ok(token);
+            var userCookieObj = JsonConvert.DeserializeAnonymousType(userObj.ToString(), definition);
+
+            //is the user passed from cookie a valid user that is saved in database ?
+            bool userFound = false;
+            using (var dbContext = _dbContextFactory.CreateDbContext())
+            {
+                try
+                {
+                    userFound = dbContext.Users
+                        .Any(x => x.UserId == userCookieObj.userId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, ex.Message);
+                }
+            }
+            if(!userFound)
+                return Unauthorized();
+
+            return Ok(
+                JwtTokenUtils.GetToken(
+                 userCookieObj.userId, 
+                _configuration["Auth0:Issuer"], 
+                _configuration["Auth0:Audience"],
+                _configuration["Auth0:Secret"],
+            Convert.ToDouble(_configuration["Auth0:TokenExpirationDelay"]))
+            );
         }
     }
 }

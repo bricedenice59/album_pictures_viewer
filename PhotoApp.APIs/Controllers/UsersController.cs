@@ -49,9 +49,10 @@ namespace PhotoApp.APIs.Controllers
 
             var obj = JsonConvert.DeserializeObject<User>(credentialsJson.ToString());
             bool authenticationOk = false;
+            UserDto userToLogin = null;
             try
             {
-                await _authenticationService.Login(obj.UserId, obj.Password);
+                userToLogin = await _authenticationService.Login(obj.UserName, obj.Password);
                 authenticationOk = true;
             }
             catch (Exception e)
@@ -62,8 +63,13 @@ namespace PhotoApp.APIs.Controllers
             var result = new LoginResult()
             {
                 IsSuccessful = authenticationOk,
-                Token = authenticationOk == true 
-                    ? JwtTokenUtils.GetToken(obj, _configuration["Auth0:Issuer"], _configuration["Auth0:Audience"],_configuration["Auth0:Secret"]) 
+                UserId = userToLogin?.UserId,
+                Token = authenticationOk 
+                    ? JwtTokenUtils.GetToken(userToLogin?.UserId,
+                        _configuration["Auth0:Issuer"],
+                        _configuration["Auth0:Audience"],
+                        _configuration["Auth0:Secret"],
+                Convert.ToDouble(_configuration["Auth0:TokenExpirationDelay"]))
                     : null
             };
             return Ok(result);

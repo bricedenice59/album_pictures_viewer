@@ -11,9 +11,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using PhotoApp.APIs.AuthenticationServices;
 using PhotoApp.Utils;
 using PhotoApp.Utils.Models;
+using PhotoApp.Web.Authentification.Utils;
 using PhotoApp.Web.Models;
 
 namespace PhotoApp.Web

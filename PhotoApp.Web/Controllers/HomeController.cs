@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using PhotoApp.Utils;
 using PhotoApp.Utils.Models;
+using PhotoApp.Web.Authentification.Utils;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace PhotoApp.Web.Controllers
@@ -57,31 +59,19 @@ namespace PhotoApp.Web.Controllers
             var token = _httpContext.HttpContext.Request.Headers["Authorization"].FirstOrDefault();
             if (JWTService.HasTokenExpired(token, TimeSpan.FromSeconds(30)))
             {
-                //delete the old variable cookie
-                Response.Cookies.Delete("X-Access-Token");
-
-                using (var client = new HttpClient())
+                var tokenResult = await JWTService.RequestForNewToken(Request.Cookies["X-Access-User"], Baseurl, ApiGetRefreshToken);
+                if (!string.IsNullOrEmpty(tokenResult))
                 {
-                    var response = await client.PostAsync($"{Baseurl}/{ApiGetRefreshToken}", new StringContent(token));
-
-                    //Checking the response is successful or not which is sent using HttpClient  
-                    if (response.IsSuccessStatusCode)
-                    {
-                        using (HttpContent resContent = response.Content)
-                        {
-                            var jsonResponse = await resContent.ReadAsStringAsync();
-                            if (!string.IsNullOrEmpty(jsonResponse))
-                            {
-                                var result = JsonConvert.DeserializeObject<LoginResult>(jsonResponse);
-                                if (result.IsSuccessful)
-                                {
-                                    //var token = result.Token;
-                                    //Response.Cookies.Append("X-Access-Token", token,
-                                    //    new CookieOptions() {HttpOnly = true, SameSite = SameSiteMode.Strict});
-                                }
-                            }
-                        }
-                    }
+                    token = "Bearer" + " " + tokenResult;
+                    //delete the old variable cookie
+                    Response.Cookies.Delete("X-Access-Token");
+                    Response.Cookies.Append("X-Access-Token", tokenResult,
+                        new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
+                }
+                else
+                {
+                    HttpContext.Session.SetString("IsLogged", false.ToString());
+                    return View("Index");
                 }
             }
 
@@ -137,9 +127,8 @@ namespace PhotoApp.Web.Controllers
                            var result = JsonConvert.DeserializeObject<LoginResult>(jsonResponse);
                            if (result.IsSuccessful)
                            {
-                               var token = result.Token;
-                               Response.Cookies.Append("X-Access-Token", token, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
-                               Response.Cookies.Append("X-Username", userDto.UserId, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
+                               Response.Cookies.Append("X-Access-Token", result.Token, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
+                               Response.Cookies.Append("X-Access-User", result.UserId, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
                                HttpContext.Session.SetString("IsLogged", result.IsSuccessful.ToString());
                            }
                            else ModelState.AddModelError("", "The user name or password provided is incorrect.");

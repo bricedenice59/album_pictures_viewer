@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
-namespace PhotoApp.APIs.AuthenticationServices
+namespace PhotoApp.Web.Authentification.Utils
 {
     public class JwtInHeaderMiddleware
     {

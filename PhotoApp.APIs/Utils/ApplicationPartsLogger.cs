@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace PhotoApp.APIs
+namespace PhotoApp.APIs.Utils
 {
     public class ApplicationPartsLogger : IHostedService
     {
