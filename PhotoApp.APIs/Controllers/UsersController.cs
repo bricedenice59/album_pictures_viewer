@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
 using PhotoApp.APIs.AuthenticationServices;
+using PhotoApp.Utils;
 using PhotoApp.Utils.Models;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
@@ -63,13 +64,13 @@ namespace PhotoApp.APIs.Controllers
             var result = new LoginResult()
             {
                 IsSuccessful = authenticationOk,
-                UserId = userToLogin?.UserId,
+                UserId = AesUtils.EncryptString(userToLogin?.UserId),
                 Token = authenticationOk 
-                    ? JwtTokenUtils.GetToken(userToLogin?.UserId,
+                    ? AesUtils.EncryptString(JwtTokenUtils.GetToken(userToLogin?.UserId,
                         _configuration["Auth0:Issuer"],
                         _configuration["Auth0:Audience"],
                         _configuration["Auth0:Secret"],
-                Convert.ToDouble(_configuration["Auth0:TokenExpirationDelay"]))
+                Convert.ToDouble(_configuration["Auth0:TokenExpirationDelay"])))
                     : null
             };
             return Ok(result);

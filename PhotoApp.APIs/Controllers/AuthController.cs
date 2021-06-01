@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using PhotoApp.APIs.AuthenticationServices;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
+using PhotoApp.Utils;
 using PhotoApp.Utils.Models;
 
 namespace PhotoApp.APIs.Controllers
@@ -46,6 +47,11 @@ namespace PhotoApp.APIs.Controllers
             var definition = new { userId = "" };
 
             var userCookieObj = JsonConvert.DeserializeAnonymousType(userObj.ToString(), definition);
+            var user = AesUtils.DecryptString(userCookieObj.userId);
+
+            //decryption failed ?
+            if(user == null)
+                return Unauthorized();
 
             //is the user passed from cookie a valid user that is saved in database ?
             bool userFound = false;
@@ -54,7 +60,7 @@ namespace PhotoApp.APIs.Controllers
                 try
                 {
                     userFound = dbContext.Users
-                        .Any(x => x.UserId == userCookieObj.userId);
+                        .Any(x => x.UserId == user);
                 }
                 catch (Exception ex)
                 {
@@ -65,12 +71,12 @@ namespace PhotoApp.APIs.Controllers
                 return Unauthorized();
 
             return Ok(
-                JwtTokenUtils.GetToken(
+                AesUtils.EncryptString(JwtTokenUtils.GetToken(
                  userCookieObj.userId, 
                 _configuration["Auth0:Issuer"], 
                 _configuration["Auth0:Audience"],
                 _configuration["Auth0:Secret"],
-            Convert.ToDouble(_configuration["Auth0:TokenExpirationDelay"]))
+            Convert.ToDouble(_configuration["Auth0:TokenExpirationDelay"])))
             );
         }
     }

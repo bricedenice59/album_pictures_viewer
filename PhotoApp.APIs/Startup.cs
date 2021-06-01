@@ -34,6 +34,7 @@ namespace PhotoApp.APIs
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            string authHeaderBearerStr = "Bearer" + " ";
             services.AddAuthentication("OAuth")
             .AddJwtBearer("OAuth", options =>
             {
@@ -54,7 +55,28 @@ namespace PhotoApp.APIs
                     // set clockskew to zero so tokens expire exactly at token expiration time (instead of 5 minutes later)
                     ClockSkew = TimeSpan.Zero
                 };
+                options.Events = new JwtBearerEvents()
+                {
+                    OnMessageReceived = context =>
+                    {
+                        if (context.Request.Headers.ContainsKey("Authorization"))
+                        {
+                            //extract header
+                            Microsoft.Extensions.Primitives.StringValues accessTokens = context.Request.Headers["Authorization"];
+                            var header = accessTokens.FirstOrDefault();
+                            if (header != null)
+                            {
+                                if(header.Contains(authHeaderBearerStr))
+                                    header = header.Substring(authHeaderBearerStr.Length);
 
+                                //finally decrypt token
+                                context.Token = AesUtils.DecryptString(header);
+                            }
+                             
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             services.AddControllers();
