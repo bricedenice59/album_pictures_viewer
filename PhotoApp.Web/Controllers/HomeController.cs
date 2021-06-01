@@ -34,6 +34,7 @@ namespace PhotoApp.Web.Controllers
         private const string Baseurl = "https://localhost:4000";
         private const string ApiLoginAuthentification = "api/Users/Login";
         private const string ApiGetRefreshToken = "api/Auth/GetRefreshedToken";
+        private const long CookieExpiration = TimeSpan.TicksPerDay * 7; //7 days validity
 
         public HomeController(IHttpContextAccessor httpContext, ILogger<HomeController> logger)
         {
@@ -43,6 +44,12 @@ namespace PhotoApp.Web.Controllers
 
         public IActionResult Index()
         {
+            string tokenInCookie = Request.Cookies["X-Access-Token"];
+
+            //no cookie exists ? then display login page by setting session variable IsUserConnected = false;
+            bool cookieExist = !string.IsNullOrEmpty(tokenInCookie);
+            
+            HttpContext.Session.SetString("IsUserConnected", cookieExist.ToString());
             return View();
         }
 
@@ -66,7 +73,7 @@ namespace PhotoApp.Web.Controllers
                     //delete the old variable cookie
                     Response.Cookies.Delete("X-Access-Token");
                     Response.Cookies.Append("X-Access-Token", tokenResult,
-                        new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
+                        new CookieOptions() { Expires = DateTime.Now.AddTicks(CookieExpiration), HttpOnly = true, SameSite = SameSiteMode.Strict });
                 }
                 else
                 {
@@ -112,9 +119,19 @@ namespace PhotoApp.Web.Controllers
 
             var json = JsonConvert.SerializeObject(userDto);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
+
             using (var client = new HttpClient())
             {
-                var response = await client.PostAsync($"{Baseurl}/{ApiLoginAuthentification}", content);
+                HttpResponseMessage response = null;
+                try
+                {
+                    response = await client.PostAsync($"{Baseurl}/{ApiLoginAuthentification}", content);
+                }
+                catch (HttpRequestException e)
+                {
+                    ViewBag.ErrorMessage = $"Web API {Baseurl}/{ApiLoginAuthentification} is unavailable";
+                    return View("Index");
+                }
 
                 //Checking the response is successful or not which is sent using HttpClient  
                 if (response.IsSuccessStatusCode)
@@ -127,9 +144,15 @@ namespace PhotoApp.Web.Controllers
                            var result = JsonConvert.DeserializeObject<LoginResult>(jsonResponse);
                            if (result.IsSuccessful)
                            {
-                               Response.Cookies.Append("X-Access-Token", result.Token, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
-                               Response.Cookies.Append("X-Access-User", result.UserId, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
-                               HttpContext.Session.SetString("IsLogged", result.IsSuccessful.ToString());
+                               Response.Cookies.Append("X-Access-Token", result.Token, new CookieOptions()
+                               {
+                                   Expires = DateTime.Now.AddTicks(CookieExpiration), HttpOnly = true, SameSite = SameSiteMode.Strict
+                               });
+                               Response.Cookies.Append("X-Access-User", result.UserId, new CookieOptions()
+                               {
+                                   Expires = DateTime.Now.AddTicks(CookieExpiration), HttpOnly = true, SameSite = SameSiteMode.Strict
+                               });
+                               HttpContext.Session.SetString("IsUserConnected", result.IsSuccessful.ToString());
                            }
                            else ModelState.AddModelError("", "The user name or password provided is incorrect.");
                         }
