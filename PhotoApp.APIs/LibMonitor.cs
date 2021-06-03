@@ -8,8 +8,11 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Castle.Components.DictionaryAdapter;
 using EFCore.BulkExtensions;
 using ImageMagick;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Logging;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
@@ -35,6 +38,9 @@ namespace PhotoApp.APIs
         private int chunkSize = 5;
         readonly TimeSpan startTimeSpan = TimeSpan.Zero;
         readonly TimeSpan periodTimeSpan = TimeSpan.FromHours(1);
+
+        //this dictionary allows me to avoid querying db for retrieving foreign key in albums table everytime we add a new picture
+        Dictionary<string, AlbumDto> Albums;
 
         public bool IsBusy { get; set; }
         public int ScanCompletionPercentage { get; set; }
@@ -131,10 +137,24 @@ namespace PhotoApp.APIs
                     .EnumerateFiles(photosFolder, "*", SearchOption.AllDirectories)
                     .Where(file=>AllowedExtensions.Any(file.ToLower().EndsWith)).ToList();
 
+                var uniqueAlbums = allPhotoFiles
+                    .Select(x => Path.GetDirectoryName(x))
+                    .Distinct()
+                    .Select(p => new AlbumDto() { Path = p })
+                    .ToList();
+
                 //first time scan
                 if (!lastDbUpdateTime.HasValue)
                 {
-                    await ProcessAndSaveEntity(allPhotoFiles, dbContext);
+                    await dbContext.Albums.AddRangeAsync(uniqueAlbums);
+                    await dbContext.SaveChangesAsync();
+
+                    Albums = dbContext.Albums
+                        .AsNoTracking()
+                        .ToList()
+                        .ToDictionary(x => x.Path, y => new AlbumDto() {Id = y.Id, Path = y.Path});
+
+                    await ProcessAndSaveEntity(allPhotoFiles);
                 }
                 else
                 {
@@ -143,7 +163,7 @@ namespace PhotoApp.APIs
                     List<string> deleted = new List<string>();
 
                     var allPhotosInDb = dbContext.Photos.
-                        ToDictionary(x=> Path.Combine(x.AlbumPath,x.Title), y=>y);
+                        ToDictionary(x=> Path.Combine(x.Album.Path,x.Title), y=>y);
 
                     foreach (KeyValuePair<string, PhotoDto> entry in allPhotosInDb)
                     {
@@ -185,7 +205,38 @@ namespace PhotoApp.APIs
                     }
                     if (added.Count > 0)
                     {
-                        await ProcessAndSaveEntity(added, dbContext);
+                        //process new albums creation in db first
+                        List<AlbumDto> newAlbums = new List<AlbumDto>();
+
+                        //get existing list of albums in db
+                        var existingAlbumsInDb = dbContext.Albums
+                            .AsNoTracking()
+                            .ToList()
+                            .ToDictionary(x => x.Path, y => new AlbumDto() { Id = y.Id, Path = y.Path });
+
+                        //get list of new albums to be added in db
+                        var uniqueNewAlbums = added
+                            .Select(x => Path.GetDirectoryName(x))
+                            .Distinct()
+                            .Select(p => new AlbumDto() { Path = p })
+                            .ToList();
+
+                        foreach (var uniqueNewAlbum in uniqueNewAlbums)
+                        {
+                            if(!existingAlbumsInDb.ContainsKey(uniqueNewAlbum.Path))
+                                newAlbums.Add(uniqueNewAlbum);
+                        }
+
+                        await dbContext.Albums.AddRangeAsync(newAlbums);
+                        await dbContext.SaveChangesAsync();
+
+                        //refresh and get in sync with what has been just added in db
+                        Albums = dbContext.Albums
+                            .AsNoTracking()
+                            .ToList()
+                            .ToDictionary(x => x.Path, y => new AlbumDto() { Id = y.Id, Path = y.Path });
+
+                        await ProcessAndSaveEntity(added);
                     }
                     if (updated.Count > 0)
                     {
@@ -203,19 +254,30 @@ namespace PhotoApp.APIs
             }
         }
 
-        private async Task ProcessAndSaveEntity(List<string> files, AppDbContext dbContext)
+        private async Task ProcessAndSaveEntity(List<string> files)
         {
             int intNbFilesToProcess = files.Count;
             var allPhotoFilesChunks = MiscUtils.BreakIntoChunks<string>(files, chunkSize);
-            for (int i = 0; i < allPhotoFilesChunks.Count; i++)
+
+            https://stackoverflow.com/questions/28809036/insert-a-new-entity-without-creating-child-entities-if-they-exist
+            using (var newDbContext = _dbContextFactory.CreateDbContext())
             {
-                var dicPhotos = await CreateDtoAndThumbnailAsync(allPhotoFilesChunks[i]);
-                if (dicPhotos.Count > 0)
+                for (int i = 0; i < allPhotoFilesChunks.Count; i++)
                 {
-                    await dbContext.Photos.AddRangeAsync(dicPhotos.Values);
-                    await dbContext.SaveChangesAsync();
+                    var dicPhotos = await CreateDtoAndThumbnailAsync(allPhotoFilesChunks[i]);
+                    if (dicPhotos.Count > 0)
+                    {
+                        foreach (var photo in dicPhotos.Values)
+                        {
+                            newDbContext.Entry(photo.Album).State = EntityState.Modified;
+                            newDbContext.Entry(photo).State = EntityState.Added;
+                            newDbContext.Set<PhotoDto>().Add(photo);
+                        }
+
+                        await newDbContext.SaveChangesAsync();
+                    }
+                    ScanCompletionPercentage = Convert.ToInt32(((double)(i * chunkSize) / (double)intNbFilesToProcess) * 100);
                 }
-                ScanCompletionPercentage = Convert.ToInt32(((double)(i * chunkSize) / (double)intNbFilesToProcess) * 100);
             }
         }
 
@@ -249,14 +311,18 @@ namespace PhotoApp.APIs
             {
                 string file = new string(x);
                 var fileInfo = new FileInfo(file);
+                var filepath = Path.GetDirectoryName(file);
                 PhotoDto photoDto = new PhotoDto()
                 {
                     Title = Path.GetFileName(file),
-                    AlbumPath = Path.GetDirectoryName(file),
                     Filesize = fileInfo.Length,
                     Date = fileInfo.CreationTimeUtc.ToString(CultureInfo.InvariantCulture),
                     PhotoExif = null
                 };
+                if(Albums.TryGetValue(filepath, out var album))
+                {
+                    photoDto.Album = album;
+                }
 
                 //try
                 //{
@@ -315,7 +381,7 @@ namespace PhotoApp.APIs
                         }
                     }
 
-                    dicPhotos.TryAdd(photoDto.AlbumPath + photoDto.Title, photoDto);
+                    dicPhotos.TryAdd(photoDto.Album.Path + photoDto.Title, photoDto);
                 }
                 catch (Exception e)
                 {

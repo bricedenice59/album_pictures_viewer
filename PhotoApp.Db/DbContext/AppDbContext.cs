@@ -12,6 +12,8 @@ namespace PhotoApp.Db.DbContext
         public DbSet<UserDto> Users { get; set; }
 
         public DbSet<PhotoDto> Photos { get; set; }
+        
+        public DbSet<AlbumDto> Albums { get; set; }
 
         public DbSet<LastUpdateDto> LastUpdates { get; set; }
 

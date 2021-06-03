@@ -4,11 +4,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace PhotoApp.Db.Models
 {
     [Table("Photos")]
-    public class PhotoDto : DomainObject, IEquatable<PhotoDto>
+    public class PhotoDto : DomainObject
     {
         public string Title { get; set; }
 
-        public string AlbumPath { get; set; }
+        public virtual AlbumDto Album { get; set; }
 
         public string Date { get; set; }
 
@@ -17,22 +17,5 @@ namespace PhotoApp.Db.Models
         public double Filesize { get; set; }
         
         public string PhotoExif { get; set; }
-
-        public override bool Equals(object obj)
-        {
-            return Equals(obj as PhotoDto);
-        }
-
-        public bool Equals(PhotoDto other)
-        {
-            return other != null &&
-                   Title == other.Title &&
-                   AlbumPath == other.AlbumPath;
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(AlbumPath, Title);
-        }
     }
 }
