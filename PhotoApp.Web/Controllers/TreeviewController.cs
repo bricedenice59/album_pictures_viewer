@@ -34,6 +34,9 @@ namespace PhotoApp.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var token = Request.Cookies["X-Access-Token"];
+            if (token == null)
+                return Redirect("../Home/Index");
+
             if (JWTService.HasTokenExpired(token, TimeSpan.FromSeconds(30)))
             {
                 string tokenResult = null;

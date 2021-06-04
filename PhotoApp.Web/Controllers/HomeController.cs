@@ -147,15 +147,15 @@ namespace PhotoApp.Web.Controllers
                                     SameSite = SameSiteMode.Strict
                                 });
                                 HttpContext.Session.SetString("IsUserConnected", result.IsSuccessful.ToString());
+                                return Redirect("/Treeview");
                             }
                             else ModelState.AddModelError("", "The user name or password provided is incorrect.");
                         }
                     }
                 }
-                else View("Index");
             }
 
-            return Redirect("Treeview/Index");
+            return View("Index");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
