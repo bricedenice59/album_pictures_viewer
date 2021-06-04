@@ -1,0 +1,29 @@
+﻿@using PhotoApp.Utils
+@model PhotoApp.Utils.Models.TreeviewViewModel
+
+@{
+    TreeView(Model.AlbumsFolders);
+}
+
+@functions
+{
+    void TreeView(IEnumerable<TreeviewUtils.AlbumFolder> albumsFolders)
+    {
+        <ul>
+            @foreach (var albumFolder in albumsFolders)
+            {
+                <li>
+                    @if (albumFolder.IsLeaf)
+                    {
+                        <span id="@albumFolder.Id">@albumFolder.Header</span>
+                    }
+                    else
+                    {
+                        <span>@albumFolder.Header</span>
+                        TreeView(albumFolder.Children);
+                    }
+                </li>
+            }
+        </ul>
+    }
+}

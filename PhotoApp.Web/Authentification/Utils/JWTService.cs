@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using PhotoApp.Utils;
 
 namespace PhotoApp.Web.Authentification.Utils
 {
@@ -14,9 +16,8 @@ namespace PhotoApp.Web.Authentification.Utils
         {
             try
             {
-                // trim 'Bearer ' from the start since its just a prefix for the token string
-                var jwtEncodedString = accessToken.Substring(7);
-                var token = new JwtSecurityToken(jwtEncodedString);
+                var decryptedToken = AesUtils.DecryptString(accessToken);
+                var token = new JwtSecurityToken(decryptedToken);
                 return token.ValidTo <= DateTime.Now.ToUniversalTime() + marginForValidation;
             }
             catch (Exception ex)

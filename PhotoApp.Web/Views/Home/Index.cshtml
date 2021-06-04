@@ -4,30 +4,7 @@
 @{
     ViewData["Title"] = "Home Page";
 }
-@if (HttpContextAccessor.HttpContext.Session.GetString("IsUserConnected") == true.ToString())
-{
-    @using (Html.BeginForm("CheckFile", "Home", FormMethod.Post))
-    {
-        <div class="container">
-            <div class="row">
-                <div class="col-sm-4"></div>
-                <div class="col-sm-4">
-                    <form method="post">
-                        <div class="form-group">
-                            <label>Filename :</label>
-                            <input asp-for="File.Filename" class="form-control" type="text" />
-                            @Html.ValidationMessageFor(m => m.File.Filename, "", new { @class = "text-danger" })
-                        </div>
-                        <div class="form-group">
-                            <input type="submit" class="btn btn-primary" value="" />
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    }
-}
-else
+@if (HttpContextAccessor.HttpContext.Session.GetString("IsUserConnected") == false.ToString())
 {
     @using (Html.BeginForm("Login", "Home", FormMethod.Post))
     {
@@ -36,16 +13,16 @@ else
                 @Html.ValidationSummary(true, "", new { @class = "error-login-message" })
                 <div class="form-group">
                     <label>Admin ID</label>
-                    <input asp-for="User.UserName" class="form-control" type="text"/>
-                    @Html.ValidationMessageFor(m => m.User.UserName, "", new {@class = "text-danger"})
+                    <input asp-for="User.UserName" class="form-control" type="text" />
+                    @Html.ValidationMessageFor(m => m.User.UserName, "", new { @class = "text-danger" })
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input asp-for="User.Password" class="form-control" type="password"/>
-                    @Html.ValidationMessageFor(m => m.User.Password, "", new {@class = "text-danger"})
+                    <input asp-for="User.Password" class="form-control" type="password" />
+                    @Html.ValidationMessageFor(m => m.User.Password, "", new { @class = "text-danger" })
                 </div>
                 <div class="form-group">
-                    <input type="submit" class="btn btn-primary" value="Login"/>
+                    <input type="submit" class="btn btn-primary" value="Login" />
                 </div>
             </form>
         </div>

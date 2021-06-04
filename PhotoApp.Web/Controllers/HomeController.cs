@@ -2,25 +2,17 @@
 using Microsoft.Extensions.Logging;
 using PhotoApp.Web.Models;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using PhotoApp.Utils;
 using PhotoApp.Utils.Models;
 using PhotoApp.Web.Authentification.Utils;
-using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace PhotoApp.Web.Controllers
 {
@@ -141,26 +133,29 @@ namespace PhotoApp.Web.Controllers
                         var jsonResponse = await resContent.ReadAsStringAsync();
                         if (!string.IsNullOrEmpty(jsonResponse))
                         {
-                           var result = JsonConvert.DeserializeObject<LoginResult>(jsonResponse);
-                           if (result.IsSuccessful)
-                           {
-                               Response.Cookies.Append("X-Access-Token", result.Token, new CookieOptions()
-                               {
-                                   Expires = DateTime.Now.AddTicks(CookieExpiration), HttpOnly = true, SameSite = SameSiteMode.Strict
-                               });
-                               Response.Cookies.Append("X-Access-User", result.UserId, new CookieOptions()
-                               {
-                                   Expires = DateTime.Now.AddTicks(CookieExpiration), HttpOnly = true, SameSite = SameSiteMode.Strict
-                               });
-                               HttpContext.Session.SetString("IsUserConnected", result.IsSuccessful.ToString());
-                           }
-                           else ModelState.AddModelError("", "The user name or password provided is incorrect.");
+                            var result = JsonConvert.DeserializeObject<LoginResult>(jsonResponse);
+                            if (result.IsSuccessful)
+                            {
+                                Response.Cookies.Append("X-Access-Token", result.Token, new CookieOptions()
+                                {
+                                    Expires = DateTime.Now.AddTicks(CookieExpiration), HttpOnly = true,
+                                    SameSite = SameSiteMode.Strict
+                                });
+                                Response.Cookies.Append("X-Access-User", result.UserId, new CookieOptions()
+                                {
+                                    Expires = DateTime.Now.AddTicks(CookieExpiration), HttpOnly = true,
+                                    SameSite = SameSiteMode.Strict
+                                });
+                                HttpContext.Session.SetString("IsUserConnected", result.IsSuccessful.ToString());
+                            }
+                            else ModelState.AddModelError("", "The user name or password provided is incorrect.");
                         }
                     }
                 }
+                else View("Index");
             }
 
-            return View("Index");
+            return Redirect("Treeview/Index");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
