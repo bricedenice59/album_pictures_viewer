@@ -53,7 +53,6 @@ namespace PhotoApp.Web.Controllers
 
                 if (!string.IsNullOrEmpty(tokenResult))
                 {
-                    token = "Bearer" + " " + tokenResult;
                     //delete the old variable cookie
                     Response.Cookies.Delete("X-Access-Token");
                     Response.Cookies.Append("X-Access-Token", tokenResult,
@@ -99,7 +98,7 @@ namespace PhotoApp.Web.Controllers
                     }
                 }
             }
-            return View(new TreeviewViewModel(){AlbumsFolders = treeviewStructure.Children });
+            return View(new TreeviewViewModel(){AlbumsFolders = treeviewStructure?.Children });
         }
 
         private async Task<Dictionary<string, string>> GetAllAlbums()

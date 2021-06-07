@@ -1,29 +1,56 @@
 ﻿@using PhotoApp.Utils
 @model PhotoApp.Utils.Models.TreeviewViewModel
 
-@{
-    TreeView(Model.AlbumsFolders);
+@section Scripts{
+
+    <script type="text/javascript">
+        $(function () {
+            $('.tree li:has(ul)').addClass('parent_li').find(' > span').attr('title', 'Collapse this branch');
+            $('.tree li.parent_li > span').on('click', function (e) {
+                var children = $(this).parent('li.parent_li').find(' > ul > li');
+                if (children.is(":visible")) {
+                    children.hide('fast');
+                    $(this).attr('title', 'Expand this branch').find(' > i').addClass('fa-plus-square').removeClass('fa-minus-square');
+                } else {
+                    children.show('fast');
+                    $(this).attr('title', 'Collapse this branch').find(' > i').addClass('fa-minus-square').removeClass('fa-plus-square');
+                }
+                e.stopPropagation();
+            });
+        });
+
+    </script>
 }
+
+<div class="tree">
+    <ul>
+        @{
+            TreeView(Model.AlbumsFolders);
+        }
+    </ul>
+</div>
 
 @functions
 {
     void TreeView(IEnumerable<TreeviewUtils.AlbumFolder> albumsFolders)
     {
-        <ul>
-            @foreach (var albumFolder in albumsFolders)
-            {
-                <li>
-                    @if (albumFolder.IsLeaf)
-                    {
-                        <span id="@albumFolder.Id">@albumFolder.Header</span>
-                    }
-                    else
-                    {
-                        <span>@albumFolder.Header</span>
-                        TreeView(albumFolder.Children);
-                    }
-                </li>
-            }
-        </ul>
+        @foreach (var albumFolder in albumsFolders)
+        {
+                @if (albumFolder.IsLeaf)
+                {
+                    <ul>
+                        <li>
+                            <span>@albumFolder.Header</span>
+                        </li>
+                    </ul>
+                }
+                else
+                {
+                    <li>
+                        <span><i class="fa fa-folder-open"></i>@albumFolder.Header</span>
+                        @{ TreeView(albumFolder.Children); }
+                    </li>
+                }
+        }
     }
 }
