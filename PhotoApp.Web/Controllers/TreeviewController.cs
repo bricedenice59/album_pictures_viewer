@@ -81,6 +81,9 @@ namespace PhotoApp.Web.Controllers
                 return View("Index");
             }
 
+            if (albums == null)
+                return NoContent();
+
             var treeviewStructure = TreeviewUtils.FindRootNode(albums);
             if (treeviewStructure != null)
             {
@@ -92,13 +95,13 @@ namespace PhotoApp.Web.Controllers
                         string[] splittedValues = value.Split("/", StringSplitOptions.RemoveEmptyEntries);
                         if (splittedValues.Length != 0)
                         {
-                            TreeviewUtils.FillTree(ref treeviewStructure,
+                            TreeviewUtils.FillTree(ref treeviewStructure, item.Key,
                                 splittedValues.Where((string x) => x != treeviewStructure.Header).ToList());
                         }
                     }
                 }
             }
-            return View(new TreeviewViewModel(){AlbumsFolders = treeviewStructure?.Children });
+            return View(new TreeviewViewModel(){AlbumsFolders = treeviewStructure });
         }
 
         private async Task<Dictionary<string, string>> GetAllAlbums()
@@ -126,6 +129,12 @@ namespace PhotoApp.Web.Controllers
             }
 
             return null;
+        }
+
+        [HttpGet]
+        public virtual ActionResult GetPhotosFromAlbum(string id)
+        {
+             return Ok();
         }
     }
 }

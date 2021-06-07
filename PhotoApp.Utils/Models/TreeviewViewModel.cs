@@ -6,6 +6,6 @@ namespace PhotoApp.Utils.Models
 {
     public class TreeviewViewModel
     {
-        public List<TreeviewUtils.AlbumFolder> AlbumsFolders { get; set; }
+        public TreeviewUtils.AlbumFolder AlbumsFolders { get; set; }
     }
 }

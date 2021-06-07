@@ -21,7 +21,7 @@ namespace PhotoApp.Utils
             public bool IsLeaf => Children.Count == 0;
         }
 
-        public static void FillTree(ref AlbumFolder root, List<string> values)
+        public static void FillTree(ref AlbumFolder root, string id, List<string> values)
         {
             while (values.Count != 0)
             {
@@ -31,21 +31,18 @@ namespace PhotoApp.Utils
                     if (existingchild != null)
                     {
                         values.RemoveAt(0);
-                        FillTree(ref existingchild, values);
+                        FillTree(ref existingchild, id, values);
                     }
                     continue;
                 }
                 AlbumFolder child = new AlbumFolder
                 {
+                    Id = id,
                     Header = values[0]
                 };
-                //if (root.Children == null)
-                //{
-                //    root.Children = new List<TreeviewStructure>();
-                //}
                 root.Children.Add(child);
                 values.RemoveAt(0);
-                FillTree(ref child, values);
+                FillTree(ref child, id, values);
             }
         }
 
