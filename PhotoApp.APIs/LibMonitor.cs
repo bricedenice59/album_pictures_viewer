@@ -356,7 +356,7 @@ namespace PhotoApp.APIs
                     _logger.LogInformation($"Processing file {x}");
 
                     // Load image.
-                    image = new MagickImage(file);
+                    image = new MagickImage(file) {Quality = 65};
 
                     // Compute thumbnail size.
                     MagickGeometry thumbnailSize = ImageUtils.GetThumbnailSize(image);

@@ -8,7 +8,7 @@ namespace PhotoApp.APIs.Utils
         public static MagickGeometry GetThumbnailSize(MagickImage original)
         {
             // Maximum size of any dimension.
-            const int maxPixels = 150;
+            const int maxPixels = 300;
 
             // Width and height.
             int originalWidth = original.Width;
