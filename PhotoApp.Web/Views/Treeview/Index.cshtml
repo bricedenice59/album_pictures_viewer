@@ -19,7 +19,13 @@
         });
 
         $(document).ready(function () {
-/*            $('#folders').treeview({ collapsed: true });*/
+/*            collapse all children at startup*/
+            $(function () {
+                var children = $('.tree li.parent_li > span').parent('li.parent_li').find(' > ul > li');
+                if (children.is(":visible")) {
+                    children.hide('fast');
+                }
+            });
 
             $(".leaf").click(function () {
                 $.ajax({
@@ -36,20 +42,28 @@
     </script>
 }
 
-<div class="tree">
-    <ul id="folders">
-        <li>
-            <span><i class="fa fa-folder-open"></i>@Model.AlbumsFolders.Header</span>
-            <ul>
+<div style="display:block; width:100%;height: 500px">
+    <div style="width: 35%; float: left; display: inline-block; position: relative; border: 2px solid #94a0b4;">
+        <div class="tree" style="height: 500px; overflow-y: auto;">
+            <ul id="folders">
                 <li>
-                    @{
-                        TreeView(Model.AlbumsFolders.Children);
-                    }
+                    <span><i class="fa fa-folder-open"></i>@Model.AlbumsFolders.Header</span>
+                        <li>
+                            @{
+                                TreeView(Model.AlbumsFolders.Children);
+                            }
+                        </li>
                 </li>
             </ul>
-        </li>
-    </ul>
+        </div>
+    </div>
+    <div style="width: 65%; float: left; display: inline-block; border: 2px solid #94a0b4;">
+        <div style="height: 500px; overflow-y: auto;">
+
+        </div>
+    </div>
 </div>
+
 
 @functions
 {
