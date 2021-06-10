@@ -1,0 +1,24 @@
+﻿@model IEnumerable<PhotoApp.Utils.Models.TreeviewViewModel.PhotoModel>
+
+<style>
+    .horizontal {
+        margin: 0;
+        padding: 0;
+    }
+
+    .horizontal li {
+        display: inline-block;
+        width: auto;
+        height: auto;
+        border: 1px solid #000;
+        margin: 10px;
+    }
+</style>
+
+
+<ul class="horizontal">
+@foreach (var photo in Model)
+{
+    <li> <img src="@photo.ImgDataURL"></li>
+}
+</ul>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,7 @@ namespace PhotoApp.APIs.Controllers
         private readonly ILogger<PhotosController> _logger;
         private readonly AppDbContextFactory _dbContextFactory;
         private readonly ILibMonitor _iLibMonitor;
+        private const int PageSize = 20;
 
         public PhotosController(AppDbContextFactory dbContextFactory, ILibMonitor iLibMonitor, ILogger<PhotosController> logger)
         {
@@ -60,5 +62,38 @@ namespace PhotoApp.APIs.Controllers
             }
         }
 
+        [HttpGet("GetPhotosForAlbumId")]
+        [Authorize]
+        public ActionResult<string> GetPhotosForAlbumId([FromQuery] int albumId, [FromQuery] int pageNumber)
+        {
+            var numberOfRecordToskip = 0;
+
+            Thread.Sleep(10000);
+
+            using (var dbContext = _dbContextFactory.CreateDbContext())
+            {
+                var nbPhotosForAlbumId = dbContext.Photos
+                    .Include(x => x.Album)
+                    .Count(x => x.Album.Id == albumId);
+
+                if (nbPhotosForAlbumId > PageSize)
+                    numberOfRecordToskip = pageNumber * PageSize;
+
+                var photos = dbContext.Photos
+                    .Include(x=>x.Album)
+                    .ToList()
+                    .Where(x=>x.Album.Id == albumId)
+                    .OrderBy(x => x.Id)
+                    .Skip(numberOfRecordToskip)
+                    .Take(PageSize).ToList();
+
+                if (photos.Any())
+                {
+                    return JsonConvert.SerializeObject(photos);
+                }
+
+                return NoContent();
+            }
+        }
     }
 }

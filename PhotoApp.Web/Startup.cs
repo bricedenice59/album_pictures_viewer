@@ -31,6 +31,7 @@ namespace PhotoApp.Web
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<TreeviewViewModel>();
             services.AddSession(options =>
                 options.IdleTimeout = TimeSpan.FromMinutes(30));
             services.AddControllersWithViews();

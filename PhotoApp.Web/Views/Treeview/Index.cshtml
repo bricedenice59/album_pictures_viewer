@@ -5,6 +5,10 @@
 
     <script type="text/javascript">
         $(function () {
+            $("div#loading").hide();
+        });
+
+        $(function () {
             $('.tree li:has(ul)').addClass('parent_li');
             $('.tree li.parent_li > span').on('click', function (e) {
                 var children = $(this).parent('li.parent_li').find(' > ul > li');
@@ -26,18 +30,55 @@
                     children.hide('fast');
                 }
             });
+        });
 
-            $(".leaf").click(function () {
+        $(".leaf").click(function () {
+            albumId = $(this).attr("id");
+            loadProducts(albumId);
+        });
+
+        var page = 1,
+            albumId = '',
+            previousAlbumId ='',
+            inCallback = false,
+            isReachedScrollEnd = false;
+
+        var scrollHandler = function () {
+            if (isReachedScrollEnd == false &&
+                ($(document).scrollTop() <= $(document).height() - $(window).height())) {
+                loadProducts(albumId);
+            }
+        }
+        function loadProducts(leafAlbumId) {
+            if (page > -1 && !inCallback) {
+                inCallback = true;
+                //page++;
+                $("div#loading").show();
                 $.ajax({
-                    url: '@Url.Action("GetPhotosFromAlbum","Treeview")',
-                    data: { id: $(this).attr("id") },
                     type: 'GET',
-                    success: function (data) {
+                    url: '@Url.Action("GetPhotosFromAlbum","Treeview")',
+                    data: { albumId: leafAlbumId, pageNumber: page},
+                    success: function (data, textstatus) {
+                        if (data != '') {
+                            if (albumId != previousAlbumId) {
+                                $("div#partial").empty();
+                            }
+                            $("div#partial").append(data);
+                        }
+                        else {
+                            page = -1;
+                        }
 
+                        inCallback = false;
+                        previousAlbumId = albumId;
+                        $("div#loading").hide();
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        alert(errorThrown);
                     }
                 });
-            });
-        });
+            }
+        }
 
     </script>
 }
@@ -57,9 +98,15 @@
             </ul>
         </div>
     </div>
-    <div style="width: 65%; float: left; display: inline-block; border: 2px solid #94a0b4;">
-        <div style="height: 500px; overflow-y: auto;">
-
+    <div style="width: 65%; float: left; display: inline-block; position: relative; border: 2px solid #94a0b4;">
+        <div id="loading" class="loading-div">
+            <img width="75" height="75" src='~/images/loading.svg' />
+        </div>
+        <div id="partial" style="height: 500px; overflow-y: auto;">
+            @if (Model.PhotosList != null)
+            {
+                @await Html.PartialAsync("~/Views/Partial/PhotosList.cshtml", Model.PhotosList)
+            }
         </div>
     </div>
 </div>

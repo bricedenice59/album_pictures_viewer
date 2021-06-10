@@ -18,14 +18,17 @@ namespace PhotoApp.Web.Controllers
     {
         private readonly ILogger<TreeviewController> _logger;
         private readonly IHttpContextAccessor _httpContext;
+        private readonly TreeviewViewModel _treeviewModel;
 
         private const string Baseurl = "https://localhost:4000";
-        private const string ApiAlbums = "api/Albums/";
+        private const string ApiAlbums = "api/Albums";
+        private const string ApiPhotos = "api/Photos";
         private const string ApiGetRefreshToken = "api/Auth/GetRefreshedToken";
         private const long CookieExpiration = TimeSpan.TicksPerDay * 7; //7 days validity
 
-        public TreeviewController(IHttpContextAccessor httpContext, ILogger<TreeviewController> logger)
+        public TreeviewController(TreeviewViewModel treeviewModel, IHttpContextAccessor httpContext, ILogger<TreeviewController> logger)
         {
+            _treeviewModel = treeviewModel;
             _httpContext = httpContext;
             _logger = logger;
         }
@@ -101,7 +104,9 @@ namespace PhotoApp.Web.Controllers
                     }
                 }
             }
-            return View(new TreeviewViewModel(){AlbumsFolders = treeviewStructure });
+
+            _treeviewModel.AlbumsFolders = treeviewStructure;
+            return View(_treeviewModel);
         }
 
         private async Task<Dictionary<string, string>> GetAllAlbums()
@@ -132,9 +137,91 @@ namespace PhotoApp.Web.Controllers
         }
 
         [HttpGet]
-        public virtual ActionResult GetPhotosFromAlbum(string id)
+        public async Task<IActionResult> GetPhotosFromAlbum(string albumId, string pageNumber)
         {
-             return Ok();
+            var token = Request.Cookies["X-Access-Token"];
+            if (token == null)
+                return Redirect("../Home/Index");
+
+            if (JWTService.HasTokenExpired(token, TimeSpan.FromSeconds(30)))
+            {
+                string tokenResult = null;
+                try
+                {
+                    tokenResult =
+                        await JWTService.RequestForNewToken(Request.Cookies["X-Access-User"], Baseurl, ApiGetRefreshToken);
+                }
+                catch (HttpRequestException e)
+                {
+                    ViewBag.ErrorMessage = $"Web API {Baseurl}/{ApiGetRefreshToken} is unavailable";
+                    return View("Index");
+                }
+
+                if (!string.IsNullOrEmpty(tokenResult))
+                {
+                    //delete the old variable cookie
+                    Response.Cookies.Delete("X-Access-Token");
+                    Response.Cookies.Append("X-Access-Token", tokenResult,
+                        new CookieOptions()
+                        {
+                            Expires = DateTime.Now.AddTicks(CookieExpiration),
+                            HttpOnly = true,
+                            SameSite = SameSiteMode.Strict
+                        });
+                }
+                else
+                {
+                    HttpContext.Session.SetString("IsLogged", false.ToString());
+                    View("Index");
+                }
+            }
+
+            List<TreeviewViewModel.PhotoModel> photos;
+            try
+            {
+                photos = await GetPhotosFromAlbumAsync(Convert.ToInt32(albumId), Convert.ToInt32(pageNumber));
+            }
+            catch (HttpRequestException e)
+            {
+                ViewBag.ErrorMessage = $"Web API {Baseurl}/{ApiPhotos} is unavailable";
+                return View("Index");
+            }
+
+            if (photos == null)
+                return NoContent();
+
+            foreach (var photo in photos)
+            {
+                var data = Convert.ToBase64String(photo.Thumbnail);
+                photo.ImgDataURL = $"data:image/png;base64,{data}";
+            }
+
+            _treeviewModel.PhotosList = photos;
+            return PartialView("~/Views/Partial/PhotosList.cshtml", _treeviewModel.PhotosList);
+        }
+
+
+        private async Task<List<TreeviewViewModel.PhotoModel>> GetPhotosFromAlbumAsync(int albumId, int pageNumber)
+        {
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + Request.Cookies["X-Access-Token"]);
+                var request = $"{Baseurl}/{ApiPhotos}/GetPhotosForAlbumId?albumId={albumId}&pageNumber={pageNumber}";
+                var response = await client.GetAsync(request);
+                if (response.IsSuccessStatusCode)
+                {
+                    using (HttpContent resContent = response.Content)
+                    {
+                        var jsonResponse = await resContent.ReadAsStringAsync();
+                        if (!string.IsNullOrEmpty(jsonResponse))
+                        {
+                            return JsonConvert.DeserializeObject<List<TreeviewViewModel.PhotoModel>>(jsonResponse);
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
     }
 }
