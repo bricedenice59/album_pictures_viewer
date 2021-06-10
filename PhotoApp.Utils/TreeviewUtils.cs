@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PhotoApp.Utils.Models;
 
 namespace PhotoApp.Utils
 {
@@ -19,9 +20,11 @@ namespace PhotoApp.Utils
             public List<AlbumFolder> Children { get; set; }
 
             public bool IsLeaf => Children.Count == 0;
+
+            public int NumberOfPhotos { get; set; }
         }
 
-        public static void FillTree(ref AlbumFolder root, string id, List<string> values)
+        public static void FillTree(ref AlbumFolder root, string id, int nbPhotos, List<string> values)
         {
             while (values.Count != 0)
             {
@@ -31,29 +34,30 @@ namespace PhotoApp.Utils
                     if (existingchild != null)
                     {
                         values.RemoveAt(0);
-                        FillTree(ref existingchild, id, values);
+                        FillTree(ref existingchild, id, nbPhotos, values);
                     }
                     continue;
                 }
                 AlbumFolder child = new AlbumFolder
                 {
                     Id = id,
-                    Header = values[0]
+                    Header = values[0],
+                    NumberOfPhotos = nbPhotos
                 };
                 root.Children.Add(child);
                 values.RemoveAt(0);
-                FillTree(ref child, id, values);
+                FillTree(ref child, id, nbPhotos, values);
             }
         }
 
-        public static AlbumFolder FindRootNode(Dictionary<string, string> csvDictionary)
+        public static AlbumFolder FindRootNode(List<AlbumModelDto> albums)
         {
             List<string> rootValues = new List<string>();
-            foreach (string value in csvDictionary.Values)
+            foreach (var value in albums)
             {
-                if (value.Contains("/"))
+                if (value.Path.Contains("/"))
                 {
-                    string[] splittedValues = value.Split("/", StringSplitOptions.RemoveEmptyEntries);
+                    string[] splittedValues = value.Path.Split("/", StringSplitOptions.RemoveEmptyEntries);
                     if (splittedValues.Length != 0)
                     {
                         rootValues.Add(splittedValues[0]);

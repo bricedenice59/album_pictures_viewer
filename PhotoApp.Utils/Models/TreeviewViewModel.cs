@@ -4,25 +4,54 @@ using System.Text;
 
 namespace PhotoApp.Utils.Models
 {
-    public class TreeviewViewModel
+    public class AlbumModelDto
     {
-        public class PhotoModel
+        public int Id { get; set; }
+        public string Path { get; set; }
+        public int NbPhotos { get; set; }
+
+        public AlbumModelDto(int id, string path, int nbPhotos)
         {
-            public string Title { get; set; }
+            Id = id;
+            Path = path;
+            NbPhotos = nbPhotos;
+        }
+    }
 
-            public string Date { get; set; }
-
-            public byte[] Thumbnail { get; set; }
-
-            public double Filesize { get; set; }
-
-            public string PhotoExif { get; set; }
-
-            public string ImgDataURL { get; set; }
+    public class PhotosModelDto
+    {
+        public PhotosModelDto(List<PhotoDto> listPhotos)
+        {
+            ListPhotos = listPhotos;
         }
 
-        public TreeviewUtils.AlbumFolder AlbumsFolders { get; set; }
+        public PhotosModelDto()
+        {
 
-        public List<PhotoModel> PhotosList { get; set; }
+        }
+
+        public List<PhotoDto> ListPhotos { get; set; }
+    }
+
+    public class PhotoDto
+    {
+        public string Title { get; set; }
+
+        public string Date { get; set; }
+
+        public byte[] Thumbnail { get; set; }
+
+        public double Filesize { get; set; }
+
+        public string PhotoExif { get; set; }
+
+        public string ImgDataURL { get; set; }
+    }
+
+    public class TreeviewViewModel
+    {
+        public PhotosModelDto PhotosModel { get; set; }
+
+        public TreeviewUtils.AlbumFolder AlbumsFolders { get; set; }
     }
 }

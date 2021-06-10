@@ -73,7 +73,7 @@ namespace PhotoApp.Web.Controllers
                 }
             }
 
-            Dictionary<string, string> albums;
+            List<AlbumModelDto> albums;
             try
             {
                 albums = await GetAllAlbums();
@@ -90,15 +90,16 @@ namespace PhotoApp.Web.Controllers
             var treeviewStructure = TreeviewUtils.FindRootNode(albums);
             if (treeviewStructure != null)
             {
-                foreach (KeyValuePair<string, string> item in albums)
+                foreach (var item in albums)
                 {
-                    string value = item.Value;
-                    if (value.Contains("/"))
+                    if (item.Path.Contains("/"))
                     {
-                        string[] splittedValues = value.Split("/", StringSplitOptions.RemoveEmptyEntries);
+                        string[] splittedValues = item.Path.Split("/", StringSplitOptions.RemoveEmptyEntries);
                         if (splittedValues.Length != 0)
                         {
-                            TreeviewUtils.FillTree(ref treeviewStructure, item.Key,
+                            TreeviewUtils.FillTree(ref treeviewStructure, 
+                                item.Id.ToString(), 
+                                item.NbPhotos,
                                 splittedValues.Where((string x) => x != treeviewStructure.Header).ToList());
                         }
                     }
@@ -109,7 +110,7 @@ namespace PhotoApp.Web.Controllers
             return View(_treeviewModel);
         }
 
-        private async Task<Dictionary<string, string>> GetAllAlbums()
+        private async Task<List<AlbumModelDto>> GetAllAlbums()
         {
             using (var client = new HttpClient())
             {
@@ -123,11 +124,7 @@ namespace PhotoApp.Web.Controllers
                         var jsonResponse = await resContent.ReadAsStringAsync();
                         if (!string.IsNullOrEmpty(jsonResponse))
                         {
-                            return  
-                                JsonConvert.DeserializeAnonymousType(jsonResponse, new[] { new { Id = "", Path = "" }})!
-                                    .Select(x=>x)
-                                    .ToDictionary(y=>y.Id, z=>z.Path);
-                            
+                            return JsonConvert.DeserializeObject<List<AlbumModelDto>>(jsonResponse);
                         }
                     }
                 }
@@ -137,7 +134,7 @@ namespace PhotoApp.Web.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetPhotosFromAlbum(string albumId, string pageNumber)
+        public async Task<IActionResult> GetPhotosFromAlbum(string albumId, string pageNumber, string nbPhotosForAlbum)
         {
             var token = Request.Cookies["X-Access-Token"];
             if (token == null)
@@ -176,10 +173,13 @@ namespace PhotoApp.Web.Controllers
                 }
             }
 
-            List<TreeviewViewModel.PhotoModel> photos;
+            PhotosModelDto photosModelDto;
             try
             {
-                photos = await GetPhotosFromAlbumAsync(Convert.ToInt32(albumId), Convert.ToInt32(pageNumber));
+                photosModelDto = await GetPhotosFromAlbumAsync(
+                    Convert.ToInt32(albumId),
+                    Convert.ToInt32(pageNumber),
+                    Convert.ToInt32(nbPhotosForAlbum));
             }
             catch (HttpRequestException e)
             {
@@ -187,26 +187,26 @@ namespace PhotoApp.Web.Controllers
                 return View("Index");
             }
 
-            if (photos == null)
+            if (photosModelDto == null)
                 return NoContent();
 
-            foreach (var photo in photos)
+            foreach (var photo in photosModelDto.ListPhotos)
             {
                 var data = Convert.ToBase64String(photo.Thumbnail);
                 photo.ImgDataURL = $"data:image/png;base64,{data}";
             }
 
-            _treeviewModel.PhotosList = photos;
-            return PartialView("~/Views/Partial/PhotosList.cshtml", _treeviewModel.PhotosList);
+            _treeviewModel.PhotosModel = new PhotosModelDto(photosModelDto.ListPhotos);
+            return PartialView("~/Views/Partial/PhotosList.cshtml", _treeviewModel.PhotosModel.ListPhotos);
         }
 
 
-        private async Task<List<TreeviewViewModel.PhotoModel>> GetPhotosFromAlbumAsync(int albumId, int pageNumber)
+        private async Task<PhotosModelDto> GetPhotosFromAlbumAsync(int albumId, int pageNumber, int nbPhotoFromAlbum)
         {
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("Authorization", "Bearer " + Request.Cookies["X-Access-Token"]);
-                var request = $"{Baseurl}/{ApiPhotos}/GetPhotosForAlbumId?albumId={albumId}&pageNumber={pageNumber}";
+                var request = $"{Baseurl}/{ApiPhotos}/GetPhotosForAlbumId?albumId={albumId}&pageNumber={pageNumber}&nbPhotosForAlbumId={nbPhotoFromAlbum}";
                 var response = await client.GetAsync(request);
                 if (response.IsSuccessStatusCode)
                 {
@@ -215,7 +215,7 @@ namespace PhotoApp.Web.Controllers
                         var jsonResponse = await resContent.ReadAsStringAsync();
                         if (!string.IsNullOrEmpty(jsonResponse))
                         {
-                            return JsonConvert.DeserializeObject<List<TreeviewViewModel.PhotoModel>>(jsonResponse);
+                            return JsonConvert.DeserializeObject<PhotosModelDto>(jsonResponse);
                         }
                     }
                 }

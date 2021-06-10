@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
+using PhotoApp.Utils.Models;
 
 namespace PhotoApp.APIs.Controllers
 {
@@ -46,10 +47,21 @@ namespace PhotoApp.APIs.Controllers
             {
                 return NoContent();
             }
-            else
+
+            List<AlbumModelDto> albumsModelDto = new List<AlbumModelDto>();
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
-                return Ok(JsonConvert.SerializeObject(albumsLst));
+                foreach (var album in albumsLst)
+                {
+                    var nbPhotosForAlbumId = dbContext.Photos
+                        .Include(x => x.Album)
+                        .Count(x => x.Album.Id == album.Id);
+                    albumsModelDto.Add(new AlbumModelDto(album.Id, album.Path, nbPhotosForAlbumId));
+                }
             }
+
+            return Ok(JsonConvert.SerializeObject(albumsModelDto));
+
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿@model IEnumerable<PhotoApp.Utils.Models.TreeviewViewModel.PhotoModel>
+﻿@model IEnumerable<PhotoApp.Utils.Models.PhotoDto>;
 
 <style>
     .horizontal {
@@ -6,7 +6,7 @@
         padding: 0;
     }
 
-    .horizontal li {
+     .photoframe {
         display: inline-block;
         width: auto;
         height: auto;
@@ -19,6 +19,6 @@
 <ul class="horizontal">
 @foreach (var photo in Model)
 {
-    <li> <img src="@photo.ImgDataURL"></li>
+    <li class="photoframe"> <img src="@photo.ImgDataURL"></li>
 }
 </ul>

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
+using PhotoApp.Utils.Models;
 
 namespace PhotoApp.APIs.Controllers
 {
@@ -44,7 +45,7 @@ namespace PhotoApp.APIs.Controllers
         [HttpGet]
         [Route("{photoTitle}")]
         [Authorize]
-        public async Task<ActionResult<PhotoDto>> Get(string photoTitle)
+        public async Task<ActionResult<PhotoApp.Db.Models.PhotoDto>> Get(string photoTitle)
         {
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
@@ -64,32 +65,38 @@ namespace PhotoApp.APIs.Controllers
 
         [HttpGet("GetPhotosForAlbumId")]
         [Authorize]
-        public ActionResult<string> GetPhotosForAlbumId([FromQuery] int albumId, [FromQuery] int pageNumber)
+        public ActionResult<string> GetPhotosForAlbumId(
+            [FromQuery] int albumId, 
+            [FromQuery] int pageNumber,
+            [FromQuery] int nbPhotosForAlbumId)
         {
             var numberOfRecordToskip = 0;
 
-            Thread.Sleep(10000);
-
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
-                var nbPhotosForAlbumId = dbContext.Photos
-                    .Include(x => x.Album)
-                    .Count(x => x.Album.Id == albumId);
-
                 if (nbPhotosForAlbumId > PageSize)
                     numberOfRecordToskip = pageNumber * PageSize;
 
                 var photos = dbContext.Photos
+                    .AsNoTracking()
                     .Include(x=>x.Album)
                     .ToList()
                     .Where(x=>x.Album.Id == albumId)
                     .OrderBy(x => x.Id)
                     .Skip(numberOfRecordToskip)
-                    .Take(PageSize).ToList();
+                    .Take(PageSize)
+                    .Select(s => new PhotoApp.Utils.Models.PhotoDto
+                    {
+                        Title = s.Title, 
+                        Date = s.Date,
+                        Filesize = s.Filesize,
+                        Thumbnail = s.Thumbnail
+                    })
+                    .ToList();
 
                 if (photos.Any())
                 {
-                    return JsonConvert.SerializeObject(photos);
+                    return JsonConvert.SerializeObject(new PhotosModelDto(photos));
                 }
 
                 return NoContent();
