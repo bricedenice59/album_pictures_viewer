@@ -17,5 +17,9 @@ namespace PhotoApp.Db.Models
         public double Filesize { get; set; }
         
         public string PhotoExif { get; set; }
+
+        public int Height { get; set; }
+
+        public int Width { get; set; }
     }
 }

@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Castle.Components.DictionaryAdapter;
 using EFCore.BulkExtensions;
 using ImageMagick;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Logging;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
@@ -357,6 +353,19 @@ namespace PhotoApp.APIs
 
                     // Load image.
                     image = new MagickImage(file) {Quality = 65};
+                    photoDto.Width = image.Width;
+                    photoDto.Height = image.Height;
+
+                    try
+                    {
+                        //https://discuss.haiku-os.org/t/imagemagick-probem-with-image-width-and-height/5775/4
+                        //deal with wrong computed width and height because of the way the photo is stored
+                        ImageUtils.Autorotate(image);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,"Error raised in Autorotate function ");
+                    }
 
                     // Compute thumbnail size.
                     MagickGeometry thumbnailSize = ImageUtils.GetThumbnailSize(image);
