@@ -30,12 +30,38 @@ namespace PhotoApp.APIs.Controllers
         [Authorize]
         public ActionResult<string> GetAll()
         {
-            List<AlbumDto> albumsLst = null;
+            List<AlbumModelDto> albumsModelDto = new List<AlbumModelDto>();
             try
             {
                 using (var dbContext = _dbContextFactory.CreateDbContext())
                 {
-                    albumsLst = dbContext.Albums.AsNoTracking().ToList();
+                    using (var command = dbContext.Database.GetDbConnection().CreateCommand())
+                    {
+                        command.CommandText = "SELECT albums.Id as id, albums.Path as path, count(*) as nbPhotos" +
+                                              " FROM Photos photos" +
+                                              " INNER JOIN Albums albums on photos.AlbumId = albums.Id" +
+                                              " GROUP BY albums.Path" +
+                                              " ORDER BY albums.Id";
+                        dbContext.Database.OpenConnection();
+                        using (var result = command.ExecuteReader())
+                        {
+                            while (result.Read())
+                            {
+                                try
+                                {
+                                    var id = Convert.ToInt32(result["id"].ToString());
+                                    var path = result["path"].ToString();
+                                    var nbPhotos = Convert.ToInt32(result["nbPhotos"].ToString());
+
+                                    albumsModelDto.Add(new AlbumModelDto(id, path, nbPhotos));
+                                }
+                                catch (Exception e)
+                                {
+                                    _logger.LogError(e, e.Message);
+                                }
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception e)
@@ -43,23 +69,11 @@ namespace PhotoApp.APIs.Controllers
                 _logger.LogError(e, e.Message);
             }
 
-            if (albumsLst == null)
+            if (albumsModelDto.Count == 0)
             {
                 return NoContent();
             }
-
-            List<AlbumModelDto> albumsModelDto = new List<AlbumModelDto>();
-            using (var dbContext = _dbContextFactory.CreateDbContext())
-            {
-                foreach (var album in albumsLst)
-                {
-                    var nbPhotosForAlbumId = dbContext.Photos
-                        .Include(x => x.Album)
-                        .Count(x => x.Album.Id == album.Id);
-                    albumsModelDto.Add(new AlbumModelDto(album.Id, album.Path, nbPhotosForAlbumId));
-                }
-            }
-
+            
             return Ok(JsonConvert.SerializeObject(albumsModelDto));
 
         }
