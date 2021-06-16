@@ -17,6 +17,7 @@ namespace PhotoApp.APIs
                 .AddDbContext()
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
+                    webBuilder.UseKestrel(options => options.ConfigureEndpoints());
                     webBuilder.UseStartup<Startup>();
                 });
     }
