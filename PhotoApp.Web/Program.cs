@@ -13,6 +13,11 @@ namespace PhotoApp.Web
     {
         public static void Main(string[] args)
         {
+#if DEBUG
+            Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+#else
+            Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Production");
+#endif
             CreateHostBuilder(args).Build().Run();
         }
 

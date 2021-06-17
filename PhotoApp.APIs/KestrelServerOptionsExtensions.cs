@@ -26,7 +26,7 @@ namespace PhotoApp.APIs
         }
 
         private static X509Certificate2 LoadCertificate(EndpointConfiguration config,
-            Microsoft.Extensions.Hosting.IHostingEnvironment environment)
+            IWebHostEnvironment environment)
         {
             if (config.StoreName != null && config.StoreLocation != null)
             {
@@ -60,7 +60,9 @@ namespace PhotoApp.APIs
         {
             var configuration = options.ApplicationServices.GetRequiredService<IConfiguration>();
             var environment = options.ApplicationServices
-                .GetRequiredService<Microsoft.Extensions.Hosting.IHostingEnvironment>();
+                .GetRequiredService<IWebHostEnvironment>();
+
+            var test = configuration["Auth0:Issuer"];
 
             var endpoints = configuration.GetSection("HttpServer:Endpoints")
                 .GetChildren()

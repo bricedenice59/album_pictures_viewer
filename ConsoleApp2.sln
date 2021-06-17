@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhotoApp.Db", "PhotoApp.Db\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhotoApp.Utils", "PhotoApp.Utils\PhotoApp.Utils.csproj", "{98AF3EF2-FA14-46EF-82B3-D3328115CD1E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotoApp.Web", "PhotoApp.Web\PhotoApp.Web.csproj", "{93E0A172-F9E1-45D1-9C14-6FAEB693A3B6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhotoApp.Web", "PhotoApp.Web\PhotoApp.Web.csproj", "{93E0A172-F9E1-45D1-9C14-6FAEB693A3B6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -3,21 +3,17 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using PhotoApp.APIs.AuthenticationServices;
 using PhotoApp.APIs.Utils;
-using PhotoApp.Db.Models;
 using PhotoApp.Utils;
 
 namespace PhotoApp.APIs
@@ -123,11 +119,11 @@ namespace PhotoApp.APIs
                 });
             });
 
-            Task.Run(() =>
-            {
-                var libMonitor = app.ApplicationServices.GetService<ILibMonitor>();
-                libMonitor.MonitorFolder();
-            });
+            //Task.Run(() =>
+            //{
+            //    var libMonitor = app.ApplicationServices.GetService<ILibMonitor>();
+            //    libMonitor.MonitorFolder();
+            //});
         }
     }
 }

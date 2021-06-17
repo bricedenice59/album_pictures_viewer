@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PhotoApp.Utils;
@@ -17,26 +18,29 @@ namespace PhotoApp.Web.Controllers
     public class TreeviewController : Controller
     {
         private readonly ILogger<TreeviewController> _logger;
-        private readonly IHttpContextAccessor _httpContext;
         private readonly TreeviewViewModel _treeviewModel;
 
-        private const string Baseurl = "https://localhost:4000";
         private const string ApiAlbums = "api/Albums";
         private const string ApiPhotos = "api/Photos";
         private const string ApiGetRefreshToken = "api/Auth/GetRefreshedToken";
-        private const long CookieExpiration = TimeSpan.TicksPerDay * 7; //7 days validity
+        private int _cookieExpiration;
+        private readonly string Baseurl = null;
 
-        public TreeviewController(TreeviewViewModel treeviewModel, IHttpContextAccessor httpContext, ILogger<TreeviewController> logger)
+        public TreeviewController(TreeviewViewModel treeviewModel,
+            ILogger<TreeviewController> logger,
+            IConfiguration configuration)
         {
             _treeviewModel = treeviewModel;
-            _httpContext = httpContext;
             _logger = logger;
+
+            _cookieExpiration = configuration.GetValue<int>("CookieExpiration");
+            Baseurl = configuration.GetValue<string>("UrlWebAPi");
         }
 
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var token = Request.Cookies["X-Access-Token"];
+            var token = HttpContext.Request.Cookies["X-Access-Token"];
             if (token == null)
                 return Redirect("../Home/Index");
 
@@ -61,7 +65,7 @@ namespace PhotoApp.Web.Controllers
                     Response.Cookies.Append("X-Access-Token", tokenResult,
                         new CookieOptions()
                         {
-                            Expires = DateTime.Now.AddTicks(CookieExpiration),
+                            Expires = DateTime.Now.AddTicks(_cookieExpiration),
                             HttpOnly = true,
                             SameSite = SameSiteMode.Strict
                         });
@@ -161,7 +165,7 @@ namespace PhotoApp.Web.Controllers
                     Response.Cookies.Append("X-Access-Token", tokenResult,
                         new CookieOptions()
                         {
-                            Expires = DateTime.Now.AddTicks(CookieExpiration),
+                            Expires = DateTime.Now.AddTicks(_cookieExpiration),
                             HttpOnly = true,
                             SameSite = SameSiteMode.Strict
                         });

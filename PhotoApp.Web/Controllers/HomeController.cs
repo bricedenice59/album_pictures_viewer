@@ -19,19 +19,19 @@ namespace PhotoApp.Web.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly IConfiguration _configuration;
-        private readonly IHttpContextAccessor _httpContext;
 
-        //private const string Baseurl = "http://bgcode.synology.me:7500";
-        private const string Baseurl = "https://localhost:4000";
         private const string ApiLoginAuthentification = "api/Users/Login";
         private const string ApiGetRefreshToken = "api/Auth/GetRefreshedToken";
-        private const long CookieExpiration = TimeSpan.TicksPerDay * 7; //7 days validity
+        private int _cookieExpiration;
+        private readonly string Baseurl = null;
 
-        public HomeController(IHttpContextAccessor httpContext, ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, 
+            IConfiguration configuration)
         {
-            _httpContext = httpContext;
             _logger = logger;
+
+            _cookieExpiration = configuration.GetValue<int>("CookieExpiration");
+            Baseurl = configuration.GetValue<string>("UrlWebAPi");
         }
 
         public IActionResult Index()
@@ -55,7 +55,7 @@ namespace PhotoApp.Web.Controllers
                 return View("Index");
             }
 
-            var token = _httpContext.HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
             if (JWTService.HasTokenExpired(token, TimeSpan.FromSeconds(30)))
             {
                 var tokenResult = await JWTService.RequestForNewToken(Request.Cookies["X-Access-User"], Baseurl, ApiGetRefreshToken);
@@ -65,7 +65,7 @@ namespace PhotoApp.Web.Controllers
                     //delete the old variable cookie
                     Response.Cookies.Delete("X-Access-Token");
                     Response.Cookies.Append("X-Access-Token", tokenResult,
-                        new CookieOptions() { Expires = DateTime.Now.AddTicks(CookieExpiration), HttpOnly = true, SameSite = SameSiteMode.Strict });
+                        new CookieOptions() { Expires = DateTime.Now.AddTicks(_cookieExpiration), HttpOnly = true, SameSite = SameSiteMode.Strict });
                 }
                 else
                 {
@@ -136,15 +136,17 @@ namespace PhotoApp.Web.Controllers
                             var result = JsonConvert.DeserializeObject<LoginResult>(jsonResponse);
                             if (result.IsSuccessful)
                             {
-                                Response.Cookies.Append("X-Access-Token", result.Token, new CookieOptions()
+                                HttpContext.Response.Cookies.Append("X-Access-Token", result.Token, new CookieOptions()
                                 {
-                                    Expires = DateTime.Now.AddTicks(CookieExpiration), HttpOnly = true,
-                                    SameSite = SameSiteMode.Strict
+                                    Expires = DateTime.Now.AddDays(_cookieExpiration), HttpOnly = true,
+                                    SameSite = SameSiteMode.Strict,
+                                    IsEssential = true
                                 });
-                                Response.Cookies.Append("X-Access-User", result.UserId, new CookieOptions()
+                                HttpContext.Response.Cookies.Append("X-Access-User", result.UserId, new CookieOptions()
                                 {
-                                    Expires = DateTime.Now.AddTicks(CookieExpiration), HttpOnly = true,
-                                    SameSite = SameSiteMode.Strict
+                                    Expires = DateTime.Now.AddDays(_cookieExpiration), HttpOnly = true,
+                                    SameSite = SameSiteMode.Strict,
+                                    IsEssential = true
                                 });
                                 HttpContext.Session.SetString("IsUserConnected", result.IsSuccessful.ToString());
                                 return Redirect("/Treeview");

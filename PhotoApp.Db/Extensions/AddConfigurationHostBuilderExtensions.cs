@@ -7,10 +7,10 @@ namespace PhotoApp.Db.Extensions
     {
         public static IHostBuilder AddConfiguration(this IHostBuilder host)
         {
-            host.ConfigureAppConfiguration(c =>
+            host.ConfigureAppConfiguration((context, config) =>
             {
-                c.AddJsonFile("appsettings.json");
-                c.AddEnvironmentVariables();
+                config.AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json");
+                config.AddEnvironmentVariables();
             });
 
             return host;
