@@ -23,7 +23,7 @@ namespace PhotoApp.Web.Controllers
         private const string ApiAlbums = "api/Albums";
         private const string ApiPhotos = "api/Photos";
         private const string ApiGetRefreshToken = "api/Auth/GetRefreshedToken";
-        private int _cookieExpiration;
+        private readonly int _cookieExpiration;
         private readonly string Baseurl = null;
 
         public TreeviewController(TreeviewViewModel treeviewModel,
@@ -193,12 +193,6 @@ namespace PhotoApp.Web.Controllers
 
             if (photosModelDto == null)
                 return NoContent();
-
-            foreach (var photo in photosModelDto.ListPhotos)
-            {
-                var data = Convert.ToBase64String(photo.Thumbnail);
-                photo.ImgDataURL = $"data:image/png;base64,{data}";
-            }
 
             _treeviewModel.PhotosModel = new PhotosModelDto(photosModelDto.ListPhotos);
             return PartialView("~/Views/Partial/PhotosList.cshtml", _treeviewModel.PhotosModel.ListPhotos);

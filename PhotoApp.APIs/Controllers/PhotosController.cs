@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using PhotoApp.Db.DbContext;
 using PhotoApp.Db.Models;
 using PhotoApp.Utils.Models;
+using PhotoDto = PhotoApp.Db.Models.PhotoDto;
 
 namespace PhotoApp.APIs.Controllers
 {
@@ -65,12 +66,13 @@ namespace PhotoApp.APIs.Controllers
 
         [HttpGet("GetPhotosForAlbumId")]
         [Authorize]
-        public ActionResult<string> GetPhotosForAlbumId(
+        public async Task<ActionResult<string>> GetPhotosForAlbumId(
             [FromQuery] int albumId, 
             [FromQuery] int pageNumber,
             [FromQuery] int nbPhotosForAlbumId)
         {
             var numberOfRecordToskip = 0;
+            List<PhotoApp.Utils.Models.PhotoDto> lstPhotos = new List<PhotoApp.Utils.Models.PhotoDto>();
 
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
@@ -80,7 +82,6 @@ namespace PhotoApp.APIs.Controllers
                 var photos = dbContext.Photos
                     .AsNoTracking()
                     .Include(x=>x.Album)
-                    .ToList()
                     .Where(x=>x.Album.Id == albumId)
                     .OrderBy(x => x.Id)
                     .Skip(numberOfRecordToskip)
@@ -92,14 +93,21 @@ namespace PhotoApp.APIs.Controllers
                         Filesize = s.Filesize,
                         Thumbnail = s.Thumbnail
                     })
-                    .ToList();
+                    .AsAsyncEnumerable();
 
-                if (photos.Any())
+                var e = photos.GetAsyncEnumerator();
+
+                try
                 {
-                    return JsonConvert.SerializeObject(new PhotosModelDto(photos));
+                    while (await e.MoveNextAsync())
+                    {
+                        e.Current.ImgDataURL = $"data:image/png;base64,{Convert.ToBase64String(e.Current.Thumbnail)}";
+                        lstPhotos.Add(e.Current);
+                    }
                 }
+                finally { await e.DisposeAsync(); }
 
-                return NoContent();
+                return JsonConvert.SerializeObject(new PhotosModelDto(lstPhotos));
             }
         }
     }
