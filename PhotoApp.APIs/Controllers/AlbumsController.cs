@@ -75,7 +75,6 @@ namespace PhotoApp.APIs.Controllers
 
             var albumModelDtos = albumsModelDto.OrderBy(x => x.Path).ToList();
             return Ok(JsonConvert.SerializeObject(albumModelDtos));
-
         }
     }
 }

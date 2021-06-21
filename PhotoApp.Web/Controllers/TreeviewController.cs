@@ -96,9 +96,9 @@ namespace PhotoApp.Web.Controllers
             {
                 foreach (var item in albums)
                 {
-                    if (item.Path.Contains("/"))
+                    if (item.Path.Contains("\\"))
                     {
-                        string[] splittedValues = item.Path.Split("/", StringSplitOptions.RemoveEmptyEntries);
+                        string[] splittedValues = item.Path.Split("\\", StringSplitOptions.RemoveEmptyEntries);
                         if (splittedValues.Length != 0)
                         {
                             TreeviewUtils.FillTree(ref treeviewStructure, 

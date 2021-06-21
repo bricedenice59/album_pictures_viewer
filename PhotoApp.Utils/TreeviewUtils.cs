@@ -55,9 +55,9 @@ namespace PhotoApp.Utils
             List<string> rootValues = new List<string>();
             foreach (var value in albums)
             {
-                if (value.Path.Contains("/"))
+                if (value.Path.Contains("\\"))
                 {
-                    string[] splittedValues = value.Path.Split("/", StringSplitOptions.RemoveEmptyEntries);
+                    string[] splittedValues = value.Path.Split("\\", StringSplitOptions.RemoveEmptyEntries);
                     if (splittedValues.Length != 0)
                     {
                         rootValues.Add(splittedValues[0]);

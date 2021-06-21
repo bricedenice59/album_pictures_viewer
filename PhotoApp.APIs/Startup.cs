@@ -119,11 +119,11 @@ namespace PhotoApp.APIs
                 });
             });
 
-            //Task.Run(() =>
-            //{
-            //    var libMonitor = app.ApplicationServices.GetService<ILibMonitor>();
-            //    libMonitor.MonitorFolder();
-            //});
+            Task.Run(() =>
+            {
+                var libMonitor = app.ApplicationServices.GetService<ILibMonitor>();
+                libMonitor.MonitorFolder();
+            });
         }
     }
 }

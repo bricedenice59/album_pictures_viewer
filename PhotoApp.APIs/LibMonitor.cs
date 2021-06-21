@@ -26,7 +26,7 @@ namespace PhotoApp.APIs
         private readonly AppDbContextFactory _dbContextFactory;
         private readonly ILogger<LibMonitor> _logger;
         private string dbName = "PhotosLibrary.db";
-        private string photosFolder = "/photos";
+        private string photosFolder = "\\photos";
         private string[] AllowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
 
         private System.Threading.Timer _timer;
@@ -133,27 +133,6 @@ namespace PhotoApp.APIs
                     .EnumerateFiles(photosFolder, "*", SearchOption.AllDirectories)
                     .Where(file=>AllowedExtensions.Any(file.ToLower().EndsWith)).ToList();
 
-                var uniqueAlbums = allPhotoFiles
-                    .Select(x => Path.GetDirectoryName(x))
-                    .Distinct()
-                    .Select(p => new AlbumDto() { Path = p })
-                    .ToList();
-
-                //first time scan
-                if (!lastDbUpdateTime.HasValue)
-                {
-                    await dbContext.Albums.AddRangeAsync(uniqueAlbums);
-                    await dbContext.SaveChangesAsync();
-
-                    Albums = dbContext.Albums
-                        .AsNoTracking()
-                        .ToList()
-                        .ToDictionary(x => x.Path, y => new AlbumDto() {Id = y.Id, Path = y.Path});
-
-                    await ProcessAndSaveEntity(allPhotoFiles);
-                }
-                else
-                {
                     List<string> added = new List<string>();
                     List<string> updated = new List<string>();
                     List<string> deleted = new List<string>();
@@ -212,6 +191,7 @@ namespace PhotoApp.APIs
 
                         //get list of new albums to be added in db
                         var uniqueNewAlbums = added
+                            .Where(y => y != null && !y.Contains("eaDir"))
                             .Select(x => Path.GetDirectoryName(x))
                             .Distinct()
                             .Select(p => new AlbumDto() { Path = p })
@@ -238,7 +218,6 @@ namespace PhotoApp.APIs
                     {
                         await ProcessAndUpdateEntity(updated, _dbContextFactory);
                     }
-                }
             }
             catch (Exception ex)
             {
@@ -352,7 +331,7 @@ namespace PhotoApp.APIs
                     _logger.LogInformation($"Processing file {x}");
 
                     // Load image.
-                    image = new MagickImage(file) {Quality = 65};
+                    image = new MagickImage(file) {Quality = 95};
                     photoDto.Width = image.Width;
                     photoDto.Height = image.Height;
 

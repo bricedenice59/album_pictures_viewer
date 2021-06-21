@@ -46,8 +46,8 @@ namespace PhotoApp.Web.Controllers
                 HttpContext.Session.SetString("IsUserConnected", true.ToString());
                 return Redirect("/Treeview");
             }
-
-            return View("Index");
+            HttpContext.Session.SetString("IsUserConnected", false.ToString());
+            return View();
         }
 
         [HttpPost]
