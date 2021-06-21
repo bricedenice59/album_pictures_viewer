@@ -40,8 +40,7 @@ namespace PhotoApp.APIs.Controllers
                         command.CommandText = "SELECT albums.Id as id, albums.Path as path, count(*) as nbPhotos" +
                                               " FROM Photos photos" +
                                               " INNER JOIN Albums albums on photos.AlbumId = albums.Id" +
-                                              " GROUP BY albums.Path" +
-                                              " ORDER BY albums.Id";
+                                              " GROUP BY albums.Path";
                         dbContext.Database.OpenConnection();
                         using (var result = command.ExecuteReader())
                         {
@@ -73,8 +72,9 @@ namespace PhotoApp.APIs.Controllers
             {
                 return NoContent();
             }
-            
-            return Ok(JsonConvert.SerializeObject(albumsModelDto));
+
+            var albumModelDtos = albumsModelDto.OrderBy(x => x.Path).ToList();
+            return Ok(JsonConvert.SerializeObject(albumModelDtos));
 
         }
     }

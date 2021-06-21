@@ -40,9 +40,14 @@ namespace PhotoApp.Web.Controllers
 
             //no cookie exists ? then display login page by setting session variable IsUserConnected = false;
             bool cookieExist = !string.IsNullOrEmpty(tokenInCookie);
-            
-            HttpContext.Session.SetString("IsUserConnected", cookieExist.ToString());
-            return View();
+
+            if (cookieExist)
+            {
+                HttpContext.Session.SetString("IsUserConnected", true.ToString());
+                return Redirect("/Treeview");
+            }
+
+            return View("Index");
         }
 
         [HttpPost]

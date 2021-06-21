@@ -36,7 +36,9 @@
             albumId = $(this).attr("id");
             nbPhotosTotalForAlbumId = $(this).attr("itemprop");
             page = 1;
-            loadPhotosOnce(albumId);
+            if (albumId != previousAlbumId) {
+                loadPhotosOnce(albumId);
+            }
         });
 
         var page = 1,

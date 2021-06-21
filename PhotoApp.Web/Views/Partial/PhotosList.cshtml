@@ -1,24 +1,137 @@
 ﻿@model IEnumerable<PhotoApp.Utils.Models.PhotoDto>;
 
+@*https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_modal_img*@
+
+<script type="text/javascript">
+
+    var modal;
+    var modalImg;
+    var span;
+
+    $('img').click(function(){
+        modal = document.getElementById("myModal");
+        modalImg = document.getElementById("img01");
+        modal.style.display = "block";
+        modalImg.src = this.src;
+
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function () {
+            modal.style.display = "none";
+        }
+    }); 
+
+    $(document).ready(function() {
+        // Get the modal
+        modal = document.getElementById("myModal");
+        // Get the image and insert it inside the modal
+        modalImg = document.getElementById("img01");
+        // Get the <span> element that closes the modal
+        span = document.getElementsByClassName("close")[0];
+    });
+
+</script>
+
+
 <style>
     .horizontal {
         margin: 0;
         padding: 0;
     }
 
-     .photoframe {
+    .photoframe {
         display: inline-block;
         width: auto;
         height: auto;
         border: 1px solid #000;
         margin: 10px;
     }
+
+    #myImg {
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    #myImg:hover {
+        opacity: 0.7;
+    }
+
+    /* The Modal (background) */
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
+        padding-top: 100px; /* Location of the box */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgb(0,0,0); /* Fallback color */
+        background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
+    }
+
+    /* Modal Content (image) */
+    .modal-content {
+        margin: auto;
+        display: block;
+        width: 80%;
+        max-width: 700px;
+    }
+
+    /* Add Animation */
+    .modal-content {  
+        -webkit-animation-name: zoom;
+        -webkit-animation-duration: 0.3s;
+        animation-name: zoom;
+        animation-duration: 0.3s;
+    }
+
+    @@-webkit-keyframes zoom {
+    from {-webkit-transform:scale(0)} 
+    to {-webkit-transform:scale(1)}
+    }
+
+    @@keyframes zoom {
+    from {transform:scale(0)} 
+    to {transform:scale(1)}
+    }
+
+    /* The Close Button */
+    .close {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: #bbb;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    /* 100% Image Width on Smaller Screens */
+    @@media only screen and (max-width: 700px){
+    .modal-content {
+        width: 100%;
+        }
+    }
+
 </style>
 
+<!-- The Modal -->
+<div id="myModal" class="modal">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="img01">
+</div>
 
 <ul class="horizontal">
-@foreach (var photo in Model)
-{
-    <li class="photoframe"> <img src="@photo.ImgDataURL"></li>
-}
+    @foreach (var photo in Model)
+    {
+        <li class="photoframe"> <img id="myImg" src="@photo.ImgDataURL"></li>
+    }
 </ul>
