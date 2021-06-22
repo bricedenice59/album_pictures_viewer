@@ -12,7 +12,9 @@ namespace PhotoApp.Db.Models
 
         public string Date { get; set; }
 
-        public byte[] Thumbnail { get; set; }
+        public byte[] Thumbnail200px { get; set; }
+
+        public byte[] Thumbnail500px { get; set; }
 
         public double Filesize { get; set; }
         

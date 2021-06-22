@@ -22,7 +22,7 @@ namespace PhotoApp.APIs.Controllers
         private readonly ILogger<PhotosController> _logger;
         private readonly AppDbContextFactory _dbContextFactory;
         private readonly ILibMonitor _iLibMonitor;
-        private const int PageSize = 20;
+        private const int PageSize = 15;
 
         public PhotosController(AppDbContextFactory dbContextFactory, ILibMonitor iLibMonitor, ILogger<PhotosController> logger)
         {
@@ -43,15 +43,16 @@ namespace PhotoApp.APIs.Controllers
             return JsonConvert.SerializeObject(myData);
         }
 
-        [HttpGet]
-        [Route("{photoTitle}")]
+        [HttpGet("GetThumbnailBigVersion")]
         [Authorize]
-        public async Task<ActionResult<PhotoApp.Db.Models.PhotoDto>> Get(string photoTitle)
+        public async Task<ActionResult<byte[]>> GetThumbnailBigVersion([FromQuery] string photoPath, [FromQuery] string albumId)
         {
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
-                var photoItem = await dbContext.Photos.
-                    FirstOrDefaultAsync(x=>x.Title.Equals(photoTitle));
+                var photoItem = await dbContext.Photos
+                    .Include(y=>y.Album)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x=>x.Title.Equals(photoPath) && x.Album.Id == Convert.ToInt32(albumId));
 
                 if (photoItem == null)
                 {
@@ -59,7 +60,8 @@ namespace PhotoApp.APIs.Controllers
                 }
                 else
                 {
-                    return Ok(photoItem);
+                    var img = $"data:image/png;base64,{Convert.ToBase64String(photoItem.Thumbnail500px)}";
+                    return Ok(img);
                 }
             }
         }
@@ -91,7 +93,7 @@ namespace PhotoApp.APIs.Controllers
                         Title = s.Title, 
                         Date = s.Date,
                         Filesize = s.Filesize,
-                        Thumbnail = s.Thumbnail
+                        Thumbnail = s.Thumbnail200px
                     })
                     .AsAsyncEnumerable();
 

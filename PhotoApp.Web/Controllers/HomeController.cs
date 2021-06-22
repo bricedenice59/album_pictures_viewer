@@ -52,56 +52,6 @@ namespace PhotoApp.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CheckFile([Bind] HomeViewModel homeViewModel)
-        {
-            //validate your model    
-            if (homeViewModel == null || !ModelState.IsValid)
-            {
-                return View("Index");
-            }
-
-            var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
-            if (JWTService.HasTokenExpired(token, TimeSpan.FromSeconds(30)))
-            {
-                var tokenResult = await JWTService.RequestForNewToken(Request.Cookies["X-Access-User"], Baseurl, ApiGetRefreshToken);
-                if (!string.IsNullOrEmpty(tokenResult))
-                {
-                    token = "Bearer" + " " + tokenResult;
-                    //delete the old variable cookie
-                    Response.Cookies.Delete("X-Access-Token");
-                    Response.Cookies.Append("X-Access-Token", tokenResult,
-                        new CookieOptions() { Expires = DateTime.Now.AddTicks(_cookieExpiration), HttpOnly = true, SameSite = SameSiteMode.Strict });
-                }
-                else
-                {
-                    HttpContext.Session.SetString("IsLogged", false.ToString());
-                    return View("Index");
-                }
-            }
-
-            var fileDto = homeViewModel.File;
-
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("Authorization", token);
-
-                var response = await client.GetAsync($"{Baseurl}/api/photos/{fileDto.Filename}");
-                if (response.IsSuccessStatusCode)
-                {
-                    using (HttpContent resContent = response.Content)
-                    {
-                        var jsonResponse = await resContent.ReadAsStringAsync();
-                        if (!string.IsNullOrEmpty(jsonResponse))
-                        {
-                        }
-                    }
-                }
-            }
-            return View("Index");
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login([Bind] HomeViewModel homeViewModel)
         {
             //validate your model    

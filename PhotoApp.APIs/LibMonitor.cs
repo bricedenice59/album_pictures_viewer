@@ -26,14 +26,19 @@ namespace PhotoApp.APIs
         private readonly AppDbContextFactory _dbContextFactory;
         private readonly ILogger<LibMonitor> _logger;
         private string dbName = "PhotosLibrary.db";
-        private string photosFolder = "\\photos";
-        private string[] AllowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+        private string photosFolder = "E:\\";
+        private string[] AllowedExtensions = new[] {".jpg", ".jpeg", ".png"};
 
         private System.Threading.Timer _timer;
         private static int _lockFlag = 0;
-        private int chunkSize = 5;
+        private int chunkSize = 50;
         readonly TimeSpan startTimeSpan = TimeSpan.Zero;
         readonly TimeSpan periodTimeSpan = TimeSpan.FromHours(1);
+
+        private const int ThumbnailQuality65 = 65;
+        private const int ThumbnailQuality95 = 95;
+        private const int ThumbnailSmallSize = 200;
+        private const int ThumbnailBigSize = 500;
 
         //this dictionary allows me to avoid querying db for retrieving foreign key in albums table everytime we add a new picture
         Dictionary<string, AlbumDto> Albums;
@@ -41,7 +46,7 @@ namespace PhotoApp.APIs
         public bool IsBusy { get; set; }
         public int ScanCompletionPercentage { get; set; }
 
-        public LibMonitor(AppDbContextFactory dbContextFactory, 
+        public LibMonitor(AppDbContextFactory dbContextFactory,
             IMeasureTimePerformance measureTimePerformance,
             ILogger<LibMonitor> logger)
         {
@@ -52,7 +57,7 @@ namespace PhotoApp.APIs
 
         public void MonitorFolder()
         {
-            _timer = new System.Threading.Timer(async(e) =>
+            _timer = new System.Threading.Timer(async (e) =>
             {
                 _logger.LogDebug($"Thread {Thread.CurrentThread.ManagedThreadId} tries to get access to syncDB fct");
 
@@ -69,8 +74,9 @@ namespace PhotoApp.APIs
 
                     await SyncDb();
                     _measureTimePerformance.Stop();
-                    _logger.LogInformation($"It took {_measureTimePerformance.GetElapsedTime()} to sync photos with database");
-                    
+                    _logger.LogInformation(
+                        $"It took {_measureTimePerformance.GetElapsedTime()} to sync photos with database");
+
                     // free the lock
                     Interlocked.Decrement(ref _lockFlag);
                     IsBusy = false;
@@ -131,93 +137,96 @@ namespace PhotoApp.APIs
 
                 var allPhotoFiles = Directory
                     .EnumerateFiles(photosFolder, "*", SearchOption.AllDirectories)
-                    .Where(file=>AllowedExtensions.Any(file.ToLower().EndsWith)).ToList();
+                    .Where(file => AllowedExtensions.Any(file.ToLower().EndsWith)).ToList();
 
-                    List<string> added = new List<string>();
-                    List<string> updated = new List<string>();
-                    List<string> deleted = new List<string>();
+                List<string> added = new List<string>();
+                List<string> updated = new List<string>();
+                List<string> deleted = new List<string>();
 
-                    var allPhotosInDb = dbContext.Photos.
-                        ToDictionary(x=> Path.Combine(x.Album.Path,x.Title), y=>y);
+                var allPhotosInDb = dbContext.Photos.ToDictionary(x => Path.Combine(x.Album.Path, x.Title), y => y);
 
-                    foreach (KeyValuePair<string, PhotoDto> entry in allPhotosInDb)
+                foreach (KeyValuePair<string, PhotoDto> entry in allPhotosInDb)
+                {
+                    if (!File.Exists(entry.Key))
                     {
-                        if (!File.Exists(entry.Key))
-                        {
-                            deleted.Add(entry.Key);
-                        }
-                        else
-                        {
-                            if (entry.Value.Filesize != new FileInfo(entry.Key).Length)
-                                updated.Add(entry.Key);
-                        }
+                        deleted.Add(entry.Key);
+                    }
+                    else
+                    {
+                        if (entry.Value.Filesize != new FileInfo(entry.Key).Length)
+                            updated.Add(entry.Key);
+                    }
+                }
+
+                var concatDeletedUpdated = deleted.Concat(updated);
+                for (int i = 0; i < allPhotoFiles.Count; i++)
+                {
+                    var photoFilePath = allPhotoFiles[i];
+                    if (concatDeletedUpdated.Any(x => x == photoFilePath))
+                        continue;
+
+                    if (!allPhotosInDb.ContainsKey(photoFilePath))
+                        added.Add(photoFilePath);
+                }
+
+                _logger.LogInformation(
+                    $"Found {added.Count} new photos, {updated.Count} updated photos, and {deleted.Count} deleted photos");
+
+                if (deleted.Count > 0)
+                {
+                    List<PhotoDto> deletedPhotoDto = new List<PhotoDto>();
+                    foreach (var _deleted in deleted)
+                    {
+                        PhotoDto photoDto = null;
+                        allPhotosInDb.TryGetValue(allPhotosInDb.Keys.First(x => x == _deleted), out photoDto);
+                        if (photoDto != null)
+                            deletedPhotoDto.Add(photoDto);
                     }
 
-                    var concatDeletedUpdated = deleted.Concat(updated);
-                    for (int i = 0; i < allPhotoFiles.Count; i++)
-                    {
-                        var photoFilePath = allPhotoFiles[i];
-                        if (concatDeletedUpdated.Any(x => x == photoFilePath))
-                            continue;
+                    await DeleteEntity(deletedPhotoDto, dbContext);
+                }
 
-                        if (!allPhotosInDb.ContainsKey(photoFilePath))
-                            added.Add(photoFilePath);
+                if (added.Count > 0)
+                {
+                    //process new albums creation in db first
+                    List<AlbumDto> newAlbums = new List<AlbumDto>();
+
+                    //get existing list of albums in db
+                    var existingAlbumsInDb = dbContext.Albums
+                        .AsNoTracking()
+                        .ToList()
+                        .ToDictionary(x => x.Path, y => new AlbumDto() {Id = y.Id, Path = y.Path});
+
+                    //get list of new albums to be added in db
+                    var uniqueNewAlbums = added
+                        .Where(y => y != null && !y.Contains("eaDir"))
+                        .Select(x => Path.GetDirectoryName(x))
+                        .Distinct()
+                        .Select(p => new AlbumDto() {Path = p})
+                        .ToList();
+
+                    foreach (var uniqueNewAlbum in uniqueNewAlbums)
+                    {
+                        if (!existingAlbumsInDb.ContainsKey(uniqueNewAlbum.Path))
+                            newAlbums.Add(uniqueNewAlbum);
                     }
 
-                    _logger.LogInformation($"Found {added.Count} new photos, {updated.Count} updated photos, and {deleted.Count} deleted photos");
+                    await dbContext.Albums.AddRangeAsync(newAlbums);
+                    await dbContext.SaveChangesAsync();
 
-                    if (deleted.Count > 0)
-                    {
-                        List<PhotoDto> deletedPhotoDto = new List<PhotoDto>();
-                        foreach (var _deleted in deleted)
-                        {
-                            PhotoDto photoDto = null;
-                            allPhotosInDb.TryGetValue(allPhotosInDb.Keys.First(x => x == _deleted), out photoDto);
-                            if (photoDto != null)
-                                deletedPhotoDto.Add(photoDto);
-                        }
-                        await DeleteEntity(deletedPhotoDto, dbContext);
-                    }
-                    if (added.Count > 0)
-                    {
-                        //process new albums creation in db first
-                        List<AlbumDto> newAlbums = new List<AlbumDto>();
+                    //refresh and get in sync with what has been just added in db
+                    Albums = dbContext.Albums
+                        .AsNoTracking()
+                        .ToList()
+                        .ToDictionary(x => x.Path, y => new AlbumDto() {Id = y.Id, Path = y.Path});
 
-                        //get existing list of albums in db
-                        var existingAlbumsInDb = dbContext.Albums
-                            .AsNoTracking()
-                            .ToList()
-                            .ToDictionary(x => x.Path, y => new AlbumDto() { Id = y.Id, Path = y.Path });
+                    await ProcessAndSaveEntity(added);
+                }
 
-                        //get list of new albums to be added in db
-                        var uniqueNewAlbums = added
-                            .Where(y => y != null && !y.Contains("eaDir"))
-                            .Select(x => Path.GetDirectoryName(x))
-                            .Distinct()
-                            .Select(p => new AlbumDto() { Path = p })
-                            .ToList();
-
-                        foreach (var uniqueNewAlbum in uniqueNewAlbums)
-                        {
-                            if(!existingAlbumsInDb.ContainsKey(uniqueNewAlbum.Path))
-                                newAlbums.Add(uniqueNewAlbum);
-                        }
-
-                        await dbContext.Albums.AddRangeAsync(newAlbums);
-                        await dbContext.SaveChangesAsync();
-
-                        //refresh and get in sync with what has been just added in db
-                        Albums = dbContext.Albums
-                            .AsNoTracking()
-                            .ToList()
-                            .ToDictionary(x => x.Path, y => new AlbumDto() { Id = y.Id, Path = y.Path });
-
-                        await ProcessAndSaveEntity(added);
-                    }
-                    if (updated.Count > 0)
-                    {
-                        await ProcessAndUpdateEntity(updated, _dbContextFactory);
-                    }
+                if (updated.Count > 0)
+                {
+                    await ProcessAndUpdateEntity(updated, _dbContextFactory);
+                }
             }
             catch (Exception ex)
             {
@@ -234,7 +243,7 @@ namespace PhotoApp.APIs
             int intNbFilesToProcess = files.Count;
             var allPhotoFilesChunks = MiscUtils.BreakIntoChunks<string>(files, chunkSize);
 
-            https://stackoverflow.com/questions/28809036/insert-a-new-entity-without-creating-child-entities-if-they-exist
+            //https:stackoverflow.com/questions/28809036/insert-a-new-entity-without-creating-child-entities-if-they-exist
             using (var newDbContext = _dbContextFactory.CreateDbContext())
             {
                 for (int i = 0; i < allPhotoFilesChunks.Count; i++)
@@ -251,7 +260,9 @@ namespace PhotoApp.APIs
 
                         await newDbContext.SaveChangesAsync();
                     }
-                    ScanCompletionPercentage = Convert.ToInt32(((double)(i * chunkSize) / (double)intNbFilesToProcess) * 100);
+
+                    ScanCompletionPercentage =
+                        Convert.ToInt32(((double) (i * chunkSize) / (double) intNbFilesToProcess) * 100);
                 }
             }
         }
@@ -269,7 +280,9 @@ namespace PhotoApp.APIs
                 {
                     await nonQueryService.Update(photoToUpdate.Value.Id, photoToUpdate.Value);
                 }
-                ScanCompletionPercentage = Convert.ToInt32(((double)(i * chunkSize) / (double)intNbFilesToProcess) * 100);
+
+                ScanCompletionPercentage =
+                    Convert.ToInt32(((double) (i * chunkSize) / (double) intNbFilesToProcess) * 100);
             }
         }
 
@@ -294,7 +307,7 @@ namespace PhotoApp.APIs
                     Date = fileInfo.CreationTimeUtc.ToString(CultureInfo.InvariantCulture),
                     PhotoExif = null
                 };
-                if(Albums.TryGetValue(filepath, out var album))
+                if (Albums.TryGetValue(filepath, out var album))
                 {
                     photoDto.Album = album;
                 }
@@ -325,49 +338,15 @@ namespace PhotoApp.APIs
                 //    tfile?.Dispose();
                 //}
 
-                MagickImage image = null;
+
                 try
                 {
-                    _logger.LogInformation($"Processing file {x}");
-
-                    // Load image.
-                    image = new MagickImage(file) {Quality = 95};
-                    photoDto.Width = image.Width;
-                    photoDto.Height = image.Height;
-
-                    try
-                    {
-                        //https://discuss.haiku-os.org/t/imagemagick-probem-with-image-width-and-height/5775/4
-                        //deal with wrong computed width and height because of the way the photo is stored
-                        ImageUtils.Autorotate(image);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex,"Error raised in Autorotate function ");
-                    }
-
-                    // Compute thumbnail size.
-                    MagickGeometry thumbnailSize = ImageUtils.GetThumbnailSize(image);
-
-                    if (image.Width < thumbnailSize.Width || image.Height < thumbnailSize.Height)
-                    {
-                        //if no shrinking is occurring, return the original bytes
-                        using (var outStream = new MemoryStream())
-                        {
-                            await image.WriteAsync(outStream, MagickFormat.Jpg);
-                            photoDto.Thumbnail = outStream.ToArray();
-                        }
-                    }
-                    else
-                    {
-                        // Get thumbnail.
-                        image.Thumbnail(new MagickGeometry(thumbnailSize.Width, thumbnailSize.Height));
-                        using (var outStream = new MemoryStream())
-                        {
-                            await image.WriteAsync(outStream, MagickFormat.Jpg);
-                            photoDto.Thumbnail = outStream.ToArray();
-                        }
-                    }
+                    var smallThumbnailData = await GetThumbnail(file, ThumbnailSmallSize, ThumbnailQuality65);
+                    var bigThumbnailData = await GetThumbnail(file, ThumbnailBigSize, ThumbnailQuality95);
+                    photoDto.Thumbnail200px = smallThumbnailData.Item1;
+                    photoDto.Thumbnail500px = bigThumbnailData.Item1;
+                    photoDto.Width = smallThumbnailData.Item2;
+                    photoDto.Height = smallThumbnailData.Item3;
 
                     dicPhotos.TryAdd(photoDto.Album.Path + photoDto.Title, photoDto);
                 }
@@ -377,11 +356,60 @@ namespace PhotoApp.APIs
                 }
                 finally
                 {
-                    image?.Dispose();
                     file = null;
                 }
             });
             return dicPhotos;
+        }
+
+        private async Task<Tuple<byte[], int, int>> GetThumbnail(string file, int size, int quality)
+        {
+            _logger.LogInformation($"Processing file {file}");
+            MagickImage image = null;
+            try
+            {
+                // Load image.
+                image = new MagickImage(file) {Quality = quality};
+                var width = image.Width;
+                var height = image.Height;
+                try
+                {
+                    //https://discuss.haiku-os.org/t/imagemagick-probem-with-image-width-and-height/5775/4
+                    //deal with wrong computed width and height because of the way the photo is stored
+                    ImageUtils.Autorotate(image);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error raised in Autorotate function ");
+                }
+
+                // Compute thumbnail size.
+                MagickGeometry thumbnailSize = ImageUtils.GetThumbnailSize(image, size);
+
+                if (image.Width < thumbnailSize.Width || image.Height < thumbnailSize.Height)
+                {
+                    //if no shrinking is occurring, return the original bytes
+                    using (var outStream = new MemoryStream())
+                    {
+                        await image.WriteAsync(outStream, MagickFormat.Jpg);
+                        return new Tuple<byte[], int, int>(outStream.ToArray(), width, height);
+                    }
+                }
+                else
+                {
+                    // Get thumbnail.
+                    image.Thumbnail(new MagickGeometry(thumbnailSize.Width, thumbnailSize.Height));
+                    using (var outStream = new MemoryStream())
+                    {
+                        await image.WriteAsync(outStream, MagickFormat.Jpg);
+                        return new Tuple<byte[], int, int>(outStream.ToArray(), width, height);
+                    }
+                }
+            }
+            finally
+            {
+                image?.Dispose();
+            }
         }
     }
 

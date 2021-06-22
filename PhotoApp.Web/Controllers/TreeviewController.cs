@@ -65,7 +65,7 @@ namespace PhotoApp.Web.Controllers
                     Response.Cookies.Append("X-Access-Token", tokenResult,
                         new CookieOptions()
                         {
-                            Expires = DateTime.Now.AddTicks(_cookieExpiration),
+                            Expires = DateTime.Now.AddDays(_cookieExpiration),
                             HttpOnly = true,
                             SameSite = SameSiteMode.Strict
                         });
@@ -112,6 +112,51 @@ namespace PhotoApp.Web.Controllers
 
             _treeviewModel.AlbumsFolders = treeviewStructure;
             return View(_treeviewModel);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetFileFromPath(string filePath, string albumid)
+        {
+            //validate your model    
+            if (string.IsNullOrWhiteSpace(filePath) || !ModelState.IsValid)
+            {
+                return View("Index");
+            }
+
+            var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (JWTService.HasTokenExpired(token, TimeSpan.FromSeconds(30)))
+            {
+                var tokenResult = await JWTService.RequestForNewToken(Request.Cookies["X-Access-User"], Baseurl, ApiGetRefreshToken);
+                if (!string.IsNullOrEmpty(tokenResult))
+                {
+                    token = "Bearer" + " " + tokenResult;
+                    //delete the old variable cookie
+                    Response.Cookies.Delete("X-Access-Token");
+                    Response.Cookies.Append("X-Access-Token", tokenResult,
+                        new CookieOptions() { Expires = DateTime.Now.AddDays(_cookieExpiration), HttpOnly = true, SameSite = SameSiteMode.Strict });
+                }
+                else
+                {
+                    HttpContext.Session.SetString("IsLogged", false.ToString());
+                    return View("Index");
+                }
+            }
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + Request.Cookies["X-Access-Token"]);
+                var request = $"{Baseurl}/{ApiPhotos}/GetThumbnailBigVersion?photoPath={filePath}&albumId={albumid}";
+                var response = await client.GetAsync(request);
+                if (response.IsSuccessStatusCode)
+                {
+                    using (HttpContent resContent = response.Content)
+                    {
+                        var jsonResponse = await resContent.ReadAsByteArrayAsync();
+                        return File(jsonResponse, "image/png");
+                    }
+                }
+            }
+            return View("Index");
         }
 
         private async Task<List<AlbumModelDto>> GetAllAlbums()
@@ -165,7 +210,7 @@ namespace PhotoApp.Web.Controllers
                     Response.Cookies.Append("X-Access-Token", tokenResult,
                         new CookieOptions()
                         {
-                            Expires = DateTime.Now.AddTicks(_cookieExpiration),
+                            Expires = DateTime.Now.AddDays(_cookieExpiration),
                             HttpOnly = true,
                             SameSite = SameSiteMode.Strict
                         });
