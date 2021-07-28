@@ -8,15 +8,30 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\Notify.mp3" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="JWT" Version="8.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="3.1.15" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.13" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.5" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.8.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PhotoApp.Utils\PhotoApp.Utils.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="wwwroot\Notify.mp3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\firebase-messaging-sw.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
