@@ -151,9 +151,25 @@
             const dataElement = document.createElement('pre');
             dataElement.style = 'overflow-x:hidden;';
             dataHeaderElement.textContent = 'Received message:';
-            dataElement.textContent = JSON.stringify(payload, null, 2);
+            var title = payload.notification.title;
+            var date = new Date().toLocaleString();
+
+            const balanceDiv = document.createElement("div");
+            const symbolSpan = document.createElement("span");
+
+            var link = document.createElement('a');
+            link.target = "_blank";
+            var linkText = document.createTextNode(payload.notification.click_action);
+            link.appendChild(linkText);
+            link.title = payload.notification.click_action;
+            link.href = payload.notification.click_action;
+            symbolSpan.appendChild(link);
+            balanceDiv.appendChild(symbolSpan);
+
+            dataElement.textContent = title + "\r\n" + date + "\r\n";
             messagesElement.appendChild(dataHeaderElement);
             messagesElement.appendChild(dataElement);
+            messagesElement.appendChild(balanceDiv);
         }
 
         // Clear the messages element of all children.
